@@ -58,8 +58,12 @@ function usg_offer_table( array $items, string $tag ): string {
 function usg_render_toplist_inner( int $toplist_id, ?string $state, string $skin, int $limit, string $tag ): string {
 	$items = usg_toplist_items( $toplist_id, $state, $limit );
 	if ( ! $items ) {
-		$msg = 'INTL' === $state ? usg_option( 'intl_message' ) : __( 'No operators are currently available in this location. Check back soon — new states are launching all the time.', 'usasmartgamers-core' );
-		return '<div class="usg-notice">' . esc_html( $msg ) . '</div>';
+		if ( 'INTL' === $state ) {
+			return '<div class="usg-notice">' . esc_html( (string) usg_option( 'intl_message' ) ) . '</div>';
+		}
+		/* translators: %s: state name */
+		$msg = $state ? sprintf( __( 'None of the operators on this list are licensed in %s yet.', 'usasmartgamers-core' ), usg_state_name( $state ) ) : __( 'No operators are available right now.', 'usasmartgamers-core' );
+		return '<div class="usg-notice">' . esc_html( $msg ) . ' <a href="' . esc_url( usg_page_url_by_path( 'sweepstakes-casinos', '/sweepstakes-casinos/' ) ) . '">' . esc_html__( 'Sweepstakes casinos are available in most states — see our top picks', 'usasmartgamers-core' ) . '</a> · <a href="' . esc_url( usg_page_url_by_path( 'casino-bill-tracker', '/casino-bill-tracker/' ) ) . '">' . esc_html__( 'Track legalization', 'usasmartgamers-core' ) . '</a></div>';
 	}
 	if ( 'table' === $skin ) {
 		return usg_offer_table( $items, $tag );

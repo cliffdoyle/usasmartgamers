@@ -32,6 +32,27 @@ To rotate the deploy key: generate a new ed25519 key, replace the `usasmartgamer
 The pipeline ships **code only**. Content lives in the database (edited in wp-admin). Schema/option changes ship
 as idempotent plugin upgrade routines; one-off tasks use WP-CLI on the server (pattern in [skill.md](../skill.md) §4.7).
 
+### Seeder
+`wp usg seed` builds the site structure (US states + legal status, payment methods, providers, operators, offers,
+toplists, slots, ~37 pages, news, Insights, rewards, menus, settings). It is idempotent; `wp usg seed --update`
+overwrites seeded items (pages, menus, operators…) — **don't run `--update` once editors have changed content.**
+Operators, offers, slots, providers, news and state legal statuses are **SAMPLE data** — replace before launch.
+
+### Team
+| User | Role | Writes | Fact-checks |
+|---|---|---|---|
+| philimorevanessa (Vanessa Phillimore) | Administrator | Casino hubs/reviews/state pages, slots, editorial & legal pages | George's content |
+| georgeowens (George Owens) | Administrator | Sports, sweepstakes, news, Insights, bill tracker, betting tools | Vanessa's content |
+| Kevo (Kevin Lanogwa) | Administrator | — (site management) | — |
+| cliffdoyle | Administrator | — | — |
+
+Author profiles (photo, job title, expertise, bio, LinkedIn) are edited under **Users → Profile → Author profile**.
+Only filled-in social links are shown on the site (LinkedIn first).
+
+### Plugins
+Yoast SEO, Limit Login Attempts Reloaded, Two-Factor (each admin should enable 2FA under their profile) +
+our `usasmartgamers-core`. Keep the list short — the droplet has 2 GB RAM shared with two other apps.
+
 ## Common commands (on the server)
 ```bash
 cd /root/usasmartgamers
