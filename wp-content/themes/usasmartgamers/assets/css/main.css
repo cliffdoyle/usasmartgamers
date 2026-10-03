@@ -1,0 +1,46 @@
+/* Design tokens — placeholder palette modelled on the blueprint; finalise in Phase 1 (theme.json). */
+:root {
+	--usg-brand: #3a3984;
+	--usg-brand-dark: #29285e;
+	--usg-footer: #181837;
+	--usg-cta: #b22435;
+	--usg-cta-alt: #1bb56e;
+	--usg-text: #0f0e0d;
+	--usg-text-2: #494745;
+	--usg-link: #3568d4;
+	--usg-link-hover: #2a4eb8;
+	--usg-border: #e8e8e8;
+	--usg-star: #ffc107;
+	--usg-radius: 8px;
+	--usg-font: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+	--usg-max: 1200px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; font-family: var(--usg-font); color: var(--usg-text); line-height: 1.6; background: #fff; }
+a { color: var(--usg-link); }
+a:hover { color: var(--usg-link-hover); }
+img { max-width: 100%; height: auto; }
+
+.container { max-width: var(--usg-max); margin: 0 auto; padding: 0 20px; }
+.content { padding-top: 32px; padding-bottom: 48px; }
+
+.screen-reader-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.skip-link:focus { position: static; width: auto; height: auto; clip: auto; }
+
+.site-header { background: var(--usg-brand); color: #fff; }
+.site-header__inner { display: flex; align-items: center; justify-content: space-between; min-height: 72px; gap: 24px; }
+.site-title { color: #fff; font-weight: 700; font-size: 1.5rem; text-decoration: none; }
+.primary-nav ul { list-style: none; display: flex; gap: 20px; margin: 0; padding: 0; }
+.primary-nav a { color: #fff; text-decoration: none; font-weight: 500; }
+.primary-nav ul ul { display: none; }
+
+.hero { background: linear-gradient(180deg, var(--usg-brand) 0%, var(--usg-brand-dark) 100%); color: #fff; padding: 56px 0; }
+.hero h1 { font-size: clamp(2rem, 4vw, 3rem); line-height: 1.15; margin: 0 0 16px; }
+.hero p { font-size: 1.25rem; max-width: 720px; margin: 0; }
+
+.site-footer { background: var(--usg-footer); color: #c2c2d9; padding: 40px 0; font-size: 0.9rem; }
+.site-footer a { color: #fff; }
+.site-footer__columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; margin: 24px 0; }
+.site-footer__columns ul { list-style: none; padding: 0; margin: 0; }
+.site-footer__rg { border-top: 1px solid rgba(255, 255, 255, .15); padding-top: 16px; }

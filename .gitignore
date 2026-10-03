@@ -1,0 +1,23 @@
+# Secrets / environment
+.env
+.env.*
+!.env.example
+
+# Dependencies & build output
+node_modules/
+vendor/
+wp-content/themes/usasmartgamers/assets/build/
+wp-content/plugins/usasmartgamers-core/build/
+wp-content/themes/usasmartgamers/build-version.txt
+
+# Never commit content or dumps
+*.sql
+*.sql.gz
+*.tar.gz
+wp-content/uploads/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

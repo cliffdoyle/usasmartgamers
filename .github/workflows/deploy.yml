@@ -1,0 +1,83 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  SITE_HOST: usasmartgamers.com
+  ORIGIN_PORT: 8082
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: ci
+    runs-on: ubuntu-24.04
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build assets (when package.json exists)
+        if: hashFiles('package.json') != ''
+        run: npm ci && npm run build
+
+      - name: Stamp build id
+        run: echo "${{ github.sha }}" > wp-content/themes/usasmartgamers/build-version.txt
+
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      # The server pins this key to `rrsync /root/usasmartgamers/src`, so remote paths are relative to src/.
+      - name: Rsync theme and plugin
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          export RSYNC_RSH="ssh -i $HOME/.ssh/deploy_key -o IdentitiesOnly=yes"
+          OPTS="-rlptz --delete --chmod=D755,F644 --exclude=node_modules --exclude=.DS_Store"
+          rsync $OPTS wp-content/themes/usasmartgamers/ "root@$DEPLOY_HOST:wp-content/themes/usasmartgamers/"
+          rsync $OPTS wp-content/plugins/usasmartgamers-core/ "root@$DEPLOY_HOST:wp-content/plugins/usasmartgamers-core/"
+
+      - name: Purge Cloudflare cache (if configured)
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+        run: |
+          if [ -z "$CF_API_TOKEN" ] || [ -z "$CF_ZONE_ID" ]; then echo "Cloudflare secrets not set — skipping purge"; exit 0; fi
+          curl -fsS -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/purge_cache" \
+            -H "Authorization: Bearer $CF_API_TOKEN" -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}' | grep -q '"success":true'
+
+      - name: Smoke test origin (build id must match this commit)
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          for i in $(seq 1 10); do
+            BODY=$(curl -fsS -H "Host: $SITE_HOST" -H "X-Forwarded-Proto: https" "http://$DEPLOY_HOST:$ORIGIN_PORT/?rest_route=/usg/v1/health" || true)
+            echo "attempt $i: $BODY"
+            echo "$BODY" | grep -q "\"build\":\"${{ github.sha }}\"" && exit 0
+            sleep 3
+          done
+          echo "::error::Origin did not report build ${{ github.sha }}"; exit 1
+
+      - name: Smoke test public URL
+        continue-on-error: true # becomes a hard check once Cloudflare routing is live
+        run: |
+          CODE=$(curl -s -o /dev/null -w '%{http_code}' "https://$SITE_HOST/?nc=${{ github.sha }}")
+          echo "https://$SITE_HOST -> $CODE"
+          [ "$CODE" = "200" ] || { echo "::warning::Public URL returned $CODE (Cloudflare routing not ready?)"; exit 1; }

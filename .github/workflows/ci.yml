@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches-ignore: [main] # main is covered by deploy.yml, which calls this workflow
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  lint-build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PHP syntax check
+        run: |
+          php --version | head -1
+          find wp-content -name '*.php' -not -path '*/node_modules/*' -not -path '*/vendor/*' -print0 \
+            | xargs -0 -n1 -P4 php -l > /tmp/lint.txt 2>&1 || { grep -v '^No syntax errors' /tmp/lint.txt; exit 1; }
+          echo "$(wc -l < /tmp/lint.txt) PHP files OK"
+
+      - name: Build assets (when package.json exists)
+        if: hashFiles('package.json') != ''
+        run: npm ci && npm run build

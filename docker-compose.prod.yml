@@ -1,0 +1,36 @@
+# Reference copy of /root/usasmartgamers/docker-compose.prod.yml on the droplet (see skill.md).
+# Uses the SHARED MySQL container igaming-db-1 (database `usasmartgamers`) over the igaming_default network.
+# Theme and plugin are bind-mounted from /root/usasmartgamers/src, which the GitHub Actions deploy job rsyncs into.
+name: usasmartgamers
+services:
+  wordpress:
+    image: wordpress:latest
+    ports:
+      - "8082:80"
+    environment:
+      WORDPRESS_DB_HOST: igaming-db-1
+      WORDPRESS_DB_USER: ${DB_USER}
+      WORDPRESS_DB_PASSWORD: ${DB_PASSWORD}
+      WORDPRESS_DB_NAME: ${DB_NAME}
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_HOME', 'https://usasmartgamers.com');
+        define('WP_SITEURL', 'https://usasmartgamers.com');
+        define('DISALLOW_FILE_EDIT', true);
+        if (isset($$_SERVER['HTTP_X_FORWARDED_PROTO']) && $$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+            $$_SERVER['HTTPS'] = 'on';
+        }
+    volumes:
+      - wp_data:/var/www/html
+      - ./src/wp-content/themes/usasmartgamers:/var/www/html/wp-content/themes/usasmartgamers
+      - ./src/wp-content/plugins/usasmartgamers-core:/var/www/html/wp-content/plugins/usasmartgamers-core
+    networks:
+      - igaming_default
+    mem_limit: 384m
+    restart: unless-stopped
+
+networks:
+  igaming_default:
+    external: true
+
+volumes:
+  wp_data:
