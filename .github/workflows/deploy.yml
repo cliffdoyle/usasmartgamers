@@ -75,9 +75,8 @@ jobs:
           done
           echo "::error::Origin did not report build ${{ github.sha }}"; exit 1
 
-      - name: Smoke test public URL
-        continue-on-error: true # becomes a hard check once Cloudflare routing is live
+      - name: Smoke test public URL (through Cloudflare)
         run: |
-          CODE=$(curl -s -o /dev/null -w '%{http_code}' "https://$SITE_HOST/?nc=${{ github.sha }}")
-          echo "https://$SITE_HOST -> $CODE"
-          [ "$CODE" = "200" ] || { echo "::warning::Public URL returned $CODE (Cloudflare routing not ready?)"; exit 1; }
+          BODY=$(curl -fsS "https://$SITE_HOST/wp-json/usg/v1/health?nc=${{ github.sha }}")
+          echo "https://$SITE_HOST -> $BODY"
+          echo "$BODY" | grep -q "\"build\":\"${{ github.sha }}\"" || { echo "::error::Public URL is not serving build ${{ github.sha }}"; exit 1; }
