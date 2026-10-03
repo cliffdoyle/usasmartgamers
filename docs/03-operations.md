@@ -33,11 +33,14 @@ The pipeline ships **code only**. Content lives in the database (edited in wp-ad
 as idempotent plugin upgrade routines; one-off tasks use WP-CLI on the server (pattern in [skill.md](../skill.md) §4.7).
 
 ### Seeder
-`wp usg seed` builds the site **structure** only: US states + legal status, payment methods, news categories,
-four empty toplists (Top online casinos, Top sweepstakes casinos, Top sportsbooks, Homepage — best overall), ~31 pages,
-menus and settings. No operators, offers, slots, news or rewards are created — every section without data shows
-**"Coming soon"** until editors add content in wp-admin. It is idempotent; `wp usg seed --update` overwrites seeded
-pages/menus/toplists — **don't run `--update` once editors have changed content.**
+`wp usg seed` builds the site **structure** only: US states + legal status, payment methods, 26 news categories,
+eight empty toplists (casinos, sweepstakes, sportsbooks, homepage, poker, lottery, prediction markets, social casinos),
+~51 section pages, menus and settings. No operators, offers, slots, news or rewards are created — every section without
+data shows **"Coming soon"** until editors add content in wp-admin.
+
+- `wp usg seed` — **safe to re-run**: only creates what's missing; never changes pages, authors or templates editors own.
+- `wp usg seed --menus` — same, plus rebuilds the four menus from code (overwrites menu edits made in wp-admin).
+- `wp usg seed --update` — overwrites ALL seeded pages, menus, toplists and settings. **Don't use once editors have changed content.**
 
 ### Adding real content (what makes "Coming soon" disappear)
 1. **Operators & Offers → Operators**: add each casino/sportsbook (logo, score, availability by state, facts, pros/cons).

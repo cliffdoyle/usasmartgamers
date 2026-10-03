@@ -2,6 +2,12 @@
 
 Checked live on 2026-10-03 against PlayUSA's sitemaps (616 pages, 23 news categories) and our live site.
 
+> **Update (same day):** every PlayUSA *section* now exists on our site as a hub page — online poker, online lottery,
+> prediction markets, casino games + blackjack/roulette/craps/video poker, social casinos, online bingo, horse racing
+> (parimutuel, Kentucky Derby, Preakness), how to bet, taxes, revenue, tribal casinos, exclusive offers, about/careers,
+> about/media — plus all missing news categories. What remains below is **content depth** (the individual articles
+> inside each section), which the writers fill in over time; empty lists show "Coming soon".
+
 ## 1. Section-by-section: what PlayUSA has that we don't (yet)
 
 Legend: ✅ built · 🟡 template/structure built, content/sub-pages missing · ❌ not built
