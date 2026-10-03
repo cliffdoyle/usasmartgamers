@@ -4,6 +4,7 @@ WordPress affiliate site for the US gambling market, modelled on the feature set
 
 - [docs/01-playusa-blueprint.md](docs/01-playusa-blueprint.md) — full teardown of PlayUSA: features, design system, architecture, page templates, components.
 - [docs/02-build-plan.md](docs/02-build-plan.md) — our architecture, data model, plugin stack, CI/CD pipeline and phased roadmap.
+- [docs/04-gap-analysis.md](docs/04-gap-analysis.md) — what PlayUSA has that we don't yet, and a user-data / privacy report.
 - [docs/03-operations.md](docs/03-operations.md) — live server setup, deploy pipeline, secrets, backups, rollback.
 - [skill.md](skill.md) — runbook for hosting this site on the shared DigitalOcean droplet.
 
