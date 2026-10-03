@@ -1,0 +1,11 @@
+.usg-fields .usg-field { margin: 0 0 14px; }
+.usg-field__label { display: block; font-weight: 600; margin-bottom: 4px; }
+.usg-checkgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px 12px; max-height: 260px; overflow: auto; padding: 6px; border: 1px solid #dcdcde; background: #fff; }
+.usg-checkgrid--states { grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); }
+.usg-repeater td { vertical-align: top; }
+.usg-repeater td .usg-select, .usg-repeater td input[type=text] { width: 100%; }
+.usg-rep-handle { width: 28px; }
+.usg-rep-handle .button-link { display: block; line-height: 1; padding: 2px; }
+.usg-image-preview img { max-width: 120px; height: auto; display: block; margin-bottom: 6px; background: #f0f0f1; }
+#side-sortables .usg-fields .usg-select { max-width: 100%; }
+.usg-report-table td, .usg-report-table th { padding: 8px 10px; }
