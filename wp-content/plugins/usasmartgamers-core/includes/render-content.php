@@ -37,7 +37,7 @@ add_filter(
 
 function usg_author_socials( int $user_id ): string {
 	$h = '';
-	foreach ( array( 'social_x' => 'twitter', 'social_linkedin' => 'linkedin', 'social_facebook' => 'facebook', 'social_instagram' => 'instagram' ) as $k => $icon ) {
+	foreach ( array( 'social_linkedin' => 'linkedin', 'social_x' => 'twitter', 'social_facebook' => 'facebook', 'social_instagram' => 'instagram' ) as $k => $icon ) {
 		$u = usg_user_meta( $user_id, $k );
 		if ( $u ) {
 			$h .= '<a href="' . esc_url( $u ) . '" rel="noopener me" target="_blank" aria-label="' . esc_attr( ucfirst( $icon ) ) . '">' . usg_icon( $icon ) . '</a>';

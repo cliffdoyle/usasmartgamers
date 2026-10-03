@@ -120,12 +120,13 @@ class USG_Seeder {
 		$this->pages();
 		$this->links();
 		$this->posts();
+		$this->assign_team();
 		$this->rewards();
 		$this->menus();
 		$this->settings();
 		// Rules are rebuilt on the next request, when taxonomies register with the new category base.
 		delete_option( 'rewrite_rules' );
-		WP_CLI::success( 'Seed complete. Remember: operators, offers, slots, authors and news are SAMPLE content — replace before launch.' );
+		WP_CLI::success( 'Seed complete. Remember: operators, offers, slots and news are SAMPLE content — replace before launch.' );
 	}
 
 	private function states(): void {
@@ -170,32 +171,51 @@ class USG_Seeder {
 	}
 
 	private function authors(): void {
-		$people = array(
-			'jordan' => array( 'Jordan Reyes', 'Senior Casino Analyst', 'Online casinos, Bonuses, State regulation', 1 ),
-			'maya'   => array( 'Maya Thompson', 'Managing Editor & Fact-checker', 'Editorial standards, Responsible gambling, Legislation', 2 ),
-			'chris'  => array( 'Chris Delgado', 'Slots & Sweepstakes Writer', 'Slots, Sweepstakes casinos, Game math', 3 ),
+		// Real team: Vanessa writes casino/slot/editorial content, George writes sports/sweepstakes/news; each fact-checks the other.
+		$team = array(
+			'vanessa' => array( 'philimorevanessa', 'Vanessa', 'Phillimore', 'info@ontariogamers.ca', 'Senior Casino & Slots Writer', 'Online casinos, Slot reviews, Responsible gambling', 'https://www.linkedin.com/in/vanessa-phillimore-53308a352/', 1 ),
+			'george'  => array( 'georgeowens', 'George', 'Owens', 'george.owens@ontariogamers.ca', 'Sports Betting & News Writer', 'Sports betting, Sweepstakes casinos, Industry news', 'https://www.linkedin.com/in/george-owens-b051aa328', 2 ),
 		);
-		foreach ( $people as $key => $p ) {
-			$login = 'sample_' . $key;
-			$user  = get_user_by( 'login', $login );
-			$id    = $user ? $user->ID : wp_insert_user(
-				array(
-					'user_login'   => $login,
-					'user_email'   => $key . '@usasmartgamers.invalid',
-					'user_pass'    => wp_generate_password( 32 ),
-					'display_name' => $p[0],
-					'first_name'   => explode( ' ', $p[0] )[0],
-					'last_name'    => explode( ' ', $p[0] )[1],
-					'role'         => 'author',
-					'description'  => '[Placeholder profile — replace with a real team member before launch.] ' . $p[0] . ' covers ' . strtolower( $p[2] ) . ' for USA Smart Gamers, testing operators hands-on and translating the fine print into plain English.',
-				)
-			);
-			$this->authors[ $key ] = (int) $id;
-			foreach ( array( 'job_title' => $p[1], 'expertise' => $p[2], 'show_in_team' => '1', 'team_order' => $p[3], 'credentials' => 'Sample credentials', 'fun_facts' => "Favourite table game: blackjack\nHas visited 30+ casinos across the US", 'qa' => "What do you look for first in a casino? | How fast and how reliably it pays out.\nBest bankroll tip? | Set a budget before you play and never chase losses." ) as $k => $v ) {
-				update_user_meta( (int) $id, '_usg_' . $k, $v );
+		foreach ( $team as $key => $p ) {
+			$user = get_user_by( 'login', $p[0] );
+			if ( ! $user ) {
+				// Fresh/local environments only: create the profile as an author with an unusable random password.
+				$id = wp_insert_user( array( 'user_login' => $p[0], 'user_email' => $p[3], 'user_pass' => wp_generate_password( 32 ), 'first_name' => $p[1], 'last_name' => $p[2], 'display_name' => $p[1] . ' ' . $p[2], 'role' => 'author' ) );
+				foreach ( array( 'job_title' => $p[4], 'expertise' => $p[5], 'social_linkedin' => $p[6], 'show_in_team' => '1', 'team_order' => $p[7] ) as $k => $v ) {
+					update_user_meta( (int) $id, '_usg_' . $k, $v );
+				}
+				$user = get_user_by( 'id', (int) $id );
+			}
+			$this->authors[ $key ] = (int) $user->ID;
+		}
+		// Internal aliases used throughout the content builders.
+		$this->authors['jordan'] = $this->authors['vanessa'];
+		$this->authors['maya']   = $this->authors['george'];
+		$this->authors['chris']  = $this->authors['george'];
+		$this->log( 'Team authors ready.' );
+	}
+
+	/**
+	 * Final pass: assign each seeded item to Vanessa or George and make the other one the fact-checker.
+	 */
+	private function assign_team(): void {
+		$v      = $this->authors['vanessa'];
+		$g      = $this->authors['george'];
+		$george = array( 'sweepstakes-casinos', 'sweepstakes-casinos/sweepstars', 'sweepstakes-casinos/lucky-frontier', 'sports-betting', 'sports-betting/gridiron-bet', 'slots', 'news', 'casino-bill-tracker', 'tools/odds-converter', 'tools/implied-probability', 'tools/hedge-calculator', 'tools/martingale' );
+		foreach ( get_posts( array( 'post_type' => array( 'page', 'post', 'usg_blog', 'usg_slot' ), 'post_status' => 'any', 'posts_per_page' => -1 ) ) as $post ) {
+			if ( 'page' === $post->post_type ) {
+				$author = in_array( get_page_uri( $post ), $george, true ) ? $g : $v;
+			} else {
+				$author = 'usg_slot' === $post->post_type ? $v : $g;
+			}
+			if ( (int) $post->post_author !== $author ) {
+				wp_update_post( array( 'ID' => $post->ID, 'post_author' => $author ) );
+			}
+			if ( get_post_meta( $post->ID, '_usg_fact_checker', true ) ) {
+				update_post_meta( $post->ID, '_usg_fact_checker', $author === $v ? $g : $v );
 			}
 		}
-		$this->log( 'Sample authors ready.' );
+		$this->log( 'Content assigned to Vanessa & George.' );
 	}
 
 	private function taxonomies(): void {
@@ -536,7 +556,7 @@ class USG_Seeder {
 			array( 'template' => $landing )
 		);
 		$this->page( 'account', 'My Account', self::b( 'account', array() ), array( 'template' => $landing, 'meta' => array( 'hide_toc' => '1' ) ) );
-		$this->page( 'our-team', 'Meet the USA Smart Gamers Team', self::p( 'Our reviewers and editors test every operator hands-on. <em>Sample profiles — replace with your real team.</em>' ) . self::b( 'team-grid', array( 'title' => '', 'count' => 24 ) ), array( 'template' => $landing ) );
+		$this->page( 'our-team', 'Meet the USA Smart Gamers Team', self::p( 'Our writers test every operator hands-on and every money page is fact-checked by a second editor.' ) . self::b( 'team-grid', array( 'title' => '', 'count' => 24 ) ), array( 'template' => $landing ) );
 
 		// About & legal.
 		$this->page( 'about', 'About USA Smart Gamers', self::p( 'USA Smart Gamers is an independent guide to legal online gambling in the United States. Our mission is simple: help adults make smarter, safer choices about where and how they play.' ) . self::h( 'What we do' ) . self::ul( array( 'Hands-on reviews of licensed casinos, sweepstakes sites and sportsbooks', 'Verified bonuses and promo codes', 'Free tools, slot demos and guides', 'News and legislation tracking for every state' ) ) . self::h( 'How we make money' ) . self::p( 'We may earn a commission when readers sign up through our links. Commercial relationships never influence our scores. <a href="/disclaimer/">Read our advertising disclosure</a>.' ) . self::b( 'team-grid', array( 'title' => 'Our team', 'count' => 8 ) ), array( 'author' => $M ) );
