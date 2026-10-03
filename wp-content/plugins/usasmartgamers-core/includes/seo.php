@@ -49,6 +49,7 @@ add_filter(
 );
 
 /* Google News sitemap: /news-sitemap.xml (posts from the last 48 hours). */
+add_filter( 'redirect_canonical', fn( $redirect ) => get_query_var( 'usg_news_sitemap' ) ? false : $redirect );
 add_action(
 	'init',
 	function () {

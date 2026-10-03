@@ -45,6 +45,9 @@ function usg_handle_contact(): void {
 }
 
 function usg_block_contact_form( array $a ): string {
+	if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+		define( 'DONOTCACHEPAGE', true );
+	}
 	// phpcs:ignore WordPress.Security.NonceVerification
 	$st   = isset( $_GET['usg_contact'] ) ? sanitize_key( $_GET['usg_contact'] ) : '';
 	$msgs = array(

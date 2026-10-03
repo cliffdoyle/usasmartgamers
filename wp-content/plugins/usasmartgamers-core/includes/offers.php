@@ -33,8 +33,12 @@ function usg_offer_valid( int $offer_id, ?string $state ): bool {
 		return false;
 	}
 	$mode = usg_meta( $offer_id, 'availability', 'inherit' );
-	if ( 'inherit' === $mode || null === $state ) {
+	if ( 'inherit' === $mode ) {
 		return true;
+	}
+	// Nationwide default lists must never show state-restricted offers.
+	if ( null === $state ) {
+		return 'listed' !== $mode;
 	}
 	if ( 'INTL' === $state ) {
 		return false;
@@ -84,7 +88,7 @@ function usg_offer_view( int $op_id, int $offer_id = 0 ): array {
 	return array(
 		'operator' => $op_id,
 		'offer'    => $offer_id,
-		'name'     => get_the_title( $op_id ),
+		'name'     => html_entity_decode( get_the_title( $op_id ), ENT_QUOTES, 'UTF-8' ),
 		'rating'   => (float) usg_meta( $op_id, 'rating', 0 ),
 		'headline' => $offer_id ? usg_tokens( (string) usg_meta( $offer_id, 'headline', get_the_title( $offer_id ) ) ) : (string) usg_meta( $op_id, 'tagline' ),
 		'bullets'  => $offer_id ? usg_lines( usg_meta( $offer_id, 'bullets' ) ) : array(),

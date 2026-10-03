@@ -67,7 +67,7 @@ while ( have_posts() ) :
 							<?php endforeach; ?>
 						</dl>
 						<?php if ( usg_rewards_enabled() ) : ?>
-							<p class="slot-hero__coins"><?php echo usg_icon( 'coins' ); // phpcs:ignore ?> <?php echo is_user_logged_in() ? esc_html__( 'Earn coins every time you play a demo (up to 3 a day).', 'usasmartgamers' ) : wp_kses_post( sprintf( __( '<a href="%s">Join free</a> and earn coins every time you play a demo.', 'usasmartgamers' ), esc_url( usg_page_url_by_path( 'account', '/account/' ) ) ) ); ?></p>
+							<p class="slot-hero__coins"><?php echo usg_icon( 'coins' ); // phpcs:ignore ?> <span><?php echo is_user_logged_in() ? esc_html__( 'Earn coins every time you play a demo (up to 3 a day).', 'usasmartgamers' ) : wp_kses_post( sprintf( __( '<a href="%s">Join free</a> and earn coins every time you play a demo.', 'usasmartgamers' ), esc_url( usg_page_url_by_path( 'account', '/account/' ) ) ) ); ?></span></p>
 						<?php endif; ?>
 					</div>
 				</div>

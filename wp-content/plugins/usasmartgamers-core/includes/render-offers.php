@@ -78,6 +78,9 @@ function usg_geo_label( ?string $state, bool $locked ): string {
 	if ( $locked ) {
 		return '';
 	}
+	if ( 'INTL' === $state ) {
+		return '<p class="usg-geo__label">' . usg_icon( 'pin' ) . esc_html__( 'You appear to be outside the US, so we’re showing offers for international players.', 'usasmartgamers-core' ) . ' <button type="button" class="usg-linkbtn" data-usg-open-picker>' . esc_html__( 'Choose a US state', 'usasmartgamers-core' ) . '</button></p>';
+	}
 	/* translators: %s: state name */
 	return '<p class="usg-geo__label">' . usg_icon( 'pin' ) . esc_html( sprintf( __( 'Showing offers available in %s.', 'usasmartgamers-core' ), usg_state_name( $state ) ) ) . ' <button type="button" class="usg-linkbtn" data-usg-open-picker>' . esc_html__( 'Change', 'usasmartgamers-core' ) . '</button></p>';
 }

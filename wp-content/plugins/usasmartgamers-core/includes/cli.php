@@ -123,7 +123,8 @@ class USG_Seeder {
 		$this->rewards();
 		$this->menus();
 		$this->settings();
-		flush_rewrite_rules( false );
+		// Rules are rebuilt on the next request, when taxonomies register with the new category base.
+		delete_option( 'rewrite_rules' );
 		WP_CLI::success( 'Seed complete. Remember: operators, offers, slots, authors and news are SAMPLE content — replace before launch.' );
 	}
 
@@ -550,6 +551,18 @@ class USG_Seeder {
 	}
 
 	private function links(): void {
+		$short = array(
+			'online-casinos' => 'Online Casinos', 'online-casinos/liberty-spins' => 'Liberty Spins review', 'online-casinos/stars-and-stripes' => 'Stars & Stripes review', 'online-casinos/golden-eagle' => 'Golden Eagle review',
+			'online-casinos/new-jersey' => 'New Jersey', 'online-casinos/pennsylvania' => 'Pennsylvania', 'online-casinos/michigan' => 'Michigan', 'online-casinos/bonus' => 'Casino Bonuses',
+			'sweepstakes-casinos' => 'Sweepstakes Casinos', 'sweepstakes-casinos/sweepstars' => 'SweepStars review', 'sweepstakes-casinos/lucky-frontier' => 'Lucky Frontier review',
+			'sports-betting' => 'Sports Betting', 'sports-betting/gridiron-bet' => 'Gridiron Bet review', 'slots' => 'Slots', 'news' => 'News', 'learn' => 'Learn', 'tools' => 'Tools',
+			'casino-bill-tracker' => 'Bill Tracker', 'casino-finder' => 'Casino Finder', 'payments' => 'Payments', 'rewards' => 'Smart Rewards', 'our-team' => 'Our Team', 'about' => 'About',
+		);
+		foreach ( $short as $path => $label ) {
+			if ( isset( $this->pages[ $path ] ) ) {
+				update_post_meta( $this->pages[ $path ], '_usg_short_title', $label );
+			}
+		}
 		$map = array( 'liberty-spins' => 'online-casinos/liberty-spins', 'stars-and-stripes' => 'online-casinos/stars-and-stripes', 'golden-eagle' => 'online-casinos/golden-eagle', 'sweepstars' => 'sweepstakes-casinos/sweepstars', 'lucky-frontier' => 'sweepstakes-casinos/lucky-frontier', 'gridiron-bet' => 'sports-betting/gridiron-bet' );
 		foreach ( $map as $op => $path ) {
 			update_post_meta( $this->ops[ $op ], '_usg_review_page', $this->pages[ $path ] );
@@ -666,7 +679,7 @@ class USG_Seeder {
 		update_option( 'blogname', 'USA Smart Gamers' );
 		update_option( 'blogdescription', 'Honest reviews, legal bonuses and expert guides for US players' );
 		update_option( 'permalink_structure', '/news/%postname%/' );
-		update_option( 'category_base', 'topic' );
+		update_option( 'category_base', 'news/topic' );
 		update_option( 'default_comment_status', 'closed' );
 		update_option( 'default_ping_status', 'closed' );
 		update_option( 'users_can_register', 0 );

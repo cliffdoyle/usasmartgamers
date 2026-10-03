@@ -20,6 +20,7 @@ function usg_post_field_groups(): array {
 		'title'   => __( 'Article settings', 'usasmartgamers-core' ),
 		'context' => 'side',
 		'fields'  => array(
+			array( 'key' => 'short_title', 'label' => __( 'Short title (breadcrumbs)', 'usasmartgamers-core' ), 'type' => 'text' ),
 			array( 'key' => 'fact_checker', 'label' => __( 'Fact-checked by', 'usasmartgamers-core' ), 'type' => 'user' ),
 			array( 'key' => 'sticky_operator', 'label' => __( 'Sticky footer offer (operator)', 'usasmartgamers-core' ), 'type' => 'post', 'post_type' => 'usg_operator' ),
 			array( 'key' => 'hide_byline', 'label' => __( 'Hide byline', 'usasmartgamers-core' ), 'type' => 'checkbox' ),

@@ -21,6 +21,15 @@ function usg_theme_logo(): void {
 	echo '<a class="usg-wordmark" href="' . esc_url( home_url( '/' ) ) . '" rel="home" aria-label="' . esc_attr( get_bloginfo( 'name' ) ) . '"><svg class="usg-wordmark__star" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path fill="currentColor" d="m12 2 2.9 6.6 7.1.6-5.4 4.7 1.6 7L12 17.3 5.8 21l1.6-7L2 9.2l7.1-.6z"/></svg><span><b>USA</b>Smart<i>Gamers</i></span></a>';
 }
 
+function usg_crumb_title( int $id ): string {
+	$short = usg_core_active() ? (string) usg_meta( $id, 'short_title' ) : '';
+	if ( $short ) {
+		return $short;
+	}
+	$t = wp_strip_all_tags( get_the_title( $id ) );
+	return trim( preg_split( '/:\s| \(| – | — /u', $t )[0] );
+}
+
 function usg_breadcrumbs(): void {
 	if ( is_front_page() ) {
 		return;
@@ -28,13 +37,13 @@ function usg_breadcrumbs(): void {
 	$c    = array( array( __( 'Home', 'usasmartgamers' ), home_url( '/' ) ) );
 	$page = function ( string $path, string $label ) use ( &$c ) {
 		$p   = get_page_by_path( $path );
-		$c[] = array( $p ? get_the_title( $p ) : $label, $p ? get_permalink( $p ) : home_url( '/' . $path . '/' ) );
+		$c[] = array( $p ? usg_crumb_title( $p->ID ) : $label, $p ? get_permalink( $p ) : home_url( '/' . $path . '/' ) );
 	};
 	if ( is_page() ) {
 		foreach ( array_reverse( get_post_ancestors( get_the_ID() ) ) as $a ) {
-			$c[] = array( get_the_title( $a ), get_permalink( $a ) );
+			$c[] = array( usg_crumb_title( $a ), get_permalink( $a ) );
 		}
-		$c[] = array( get_the_title(), '' );
+		$c[] = array( usg_crumb_title( get_the_ID() ), '' );
 	} elseif ( is_singular( 'post' ) ) {
 		$page( 'news', 'News' );
 		$cats = get_the_category();

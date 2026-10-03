@@ -146,6 +146,9 @@ add_filter(
 );
 
 function usg_block_account( array $a ): string {
+	if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+		define( 'DONOTCACHEPAGE', true );
+	}
 	$uid = get_current_user_id();
 	$msg = '';
 	// phpcs:disable WordPress.Security.NonceVerification
