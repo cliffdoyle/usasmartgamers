@@ -214,7 +214,7 @@ enabling it** (see §10).
 
 ## 11. Open decisions (need answers before Phase 0)
 
-1. Exact domain + TLD (e.g. `usasmartgamers.com`) and whether it is (or can be moved) on **Cloudflare**.
+1. ~~Exact domain + Cloudflare~~ → **`usasmartgamers.com`, already on Cloudflare** (decided 2026-10-03).
 2. WordPress admin username + email.
 3. Brand: logo, colour palette (keep PlayUSA-like indigo/red or our own), font.
 4. Verticals for MVP (recommended: online casinos + sweepstakes + slots + news).
