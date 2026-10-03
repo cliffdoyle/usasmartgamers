@@ -34,7 +34,7 @@ get_header();
 		</div>
 		<?php usg_pagination(); ?>
 	<?php else : ?>
-		<p class="usg-notice"><?php esc_html_e( 'Nothing published here yet.', 'usasmartgamers' ); ?></p>
+		<p class="usg-notice"><?php esc_html_e( 'Coming soon.', 'usasmartgamers' ); ?></p>
 	<?php endif; ?>
 </div>
 <?php

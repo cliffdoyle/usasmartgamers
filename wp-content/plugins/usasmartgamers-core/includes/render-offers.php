@@ -91,8 +91,8 @@ function usg_geo_label( ?string $state, bool $locked ): string {
 
 function usg_block_toplist( array $a ): string {
 	$id = (int) ( $a['toplist'] ?? 0 );
-	if ( ! $id ) {
-		return '';
+	if ( ! $id || 'publish' !== get_post_status( $id ) || ! usg_meta( $id, 'items' ) ) {
+		return array_key_exists( '__state', $a ) ? usg_coming_soon() : usg_coming_soon( (string) ( $a['title'] ?? '' ) );
 	}
 	$locked = ! empty( $a['state'] ) && isset( usg_states()[ $a['state'] ] );
 	$geo    = array_key_exists( '__state', $a );
@@ -116,7 +116,7 @@ function usg_block_toplist_tabs( array $a ): string {
 		}
 	}
 	if ( ! $tabs ) {
-		return '';
+		return usg_coming_soon( (string) ( $a['title'] ?? '' ) );
 	}
 	$uid   = 'usg-tabs-' . wp_unique_id();
 	$title = ! empty( $a['title'] ) ? '<h2 class="usg-block-title">' . esc_html( usg_tokens( $a['title'] ) ) . '</h2>' : '';
@@ -238,9 +238,9 @@ function usg_block_review_summary( array $a ): string {
 }
 
 function usg_block_comparison( array $a ): string {
-	$ids = array_filter( array_map( 'absint', (array) ( $a['operators'] ?? array() ) ) );
+	$ids = array_filter( array_map( 'absint', (array) ( $a['operators'] ?? array() ) ), fn( $id ) => 'publish' === get_post_status( $id ) );
 	if ( ! $ids ) {
-		return '';
+		return usg_coming_soon( (string) ( $a['title'] ?? '' ) );
 	}
 	$h = ( ! empty( $a['title'] ) ? '<h2 class="usg-block-title">' . esc_html( usg_tokens( $a['title'] ) ) . '</h2>' : '' ) . '<div class="usg-table-wrap"><table class="usg-table usg-table--compare"><thead><tr><th>' . esc_html__( 'Operator', 'usasmartgamers-core' ) . '</th><th>' . esc_html__( 'Rating', 'usasmartgamers-core' ) . '</th><th>' . esc_html__( 'Welcome offer', 'usasmartgamers-core' ) . '</th><th>' . esc_html__( 'Payout speed', 'usasmartgamers-core' ) . '</th><th>' . esc_html__( 'Min. deposit', 'usasmartgamers-core' ) . '</th><th></th></tr></thead><tbody>';
 	foreach ( $ids as $op ) {

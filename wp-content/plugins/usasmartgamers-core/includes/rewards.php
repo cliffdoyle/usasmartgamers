@@ -213,6 +213,8 @@ function usg_block_rewards( array $a ): string {
 		}
 		if ( $cards ) {
 			$h .= '<div class="usg-rewards__catalog"><h2 class="usg-block-title">' . esc_html__( 'Turn coins into rewards', 'usasmartgamers-core' ) . '</h2>' . ( $uid ? '<p class="usg-balance">' . esc_html__( 'Your balance:', 'usasmartgamers-core' ) . ' <strong data-usg-balance>' . esc_html( number_format_i18n( usg_coin_balance( $uid ) ) ) . '</strong> ' . esc_html__( 'coins', 'usasmartgamers-core' ) . '</p>' : '' ) . '<div class="usg-rewards__grid">' . $cards . '</div><p class="usg-small">' . esc_html__( 'Coins are promotional, have no cash value and cannot be transferred. US residents 21+ only. Rewards are subject to availability and fraud checks.', 'usasmartgamers-core' ) . '</p></div>';
+		} else {
+			$h .= usg_coming_soon( __( 'Turn coins into rewards', 'usasmartgamers-core' ) );
 		}
 	}
 	return '<section class="usg-rewards">' . $h . '</section>';

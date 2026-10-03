@@ -171,5 +171,9 @@ function usg_client_ip_hash(): string {
 	return substr( hash_hmac( 'sha256', (string) $ip, wp_salt( 'nonce' ) ), 0, 32 );
 }
 
+function usg_coming_soon( string $title = '' ): string {
+	return '<section class="usg-soon">' . ( $title ? '<h2 class="usg-block-title">' . esc_html( usg_tokens( $title ) ) . '</h2>' : '' ) . '<div class="usg-coming-soon">' . usg_icon( 'clock' ) . '<span>' . esc_html__( 'Coming soon', 'usasmartgamers-core' ) . '</span></div></section>';
+}
+
 add_shortcode( 'month', fn() => wp_date( 'F' ) );
 add_shortcode( 'year', fn() => wp_date( 'Y' ) );

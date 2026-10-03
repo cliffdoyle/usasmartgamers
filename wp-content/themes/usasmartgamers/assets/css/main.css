@@ -263,6 +263,9 @@ table { border-collapse: collapse; width: 100%; }
 .usg-small { font-size: .8rem; color: var(--text-3); }
 .usg-count { display: inline-grid; place-items: center; min-width: 26px; height: 26px; border-radius: 999px; background: var(--soft-2); font-size: .8rem; padding: 0 6px; vertical-align: middle; }
 .usg-notice { background: var(--soft); border: 1px dashed #cfd6e3; border-radius: var(--radius); padding: 16px 18px; color: var(--text-2); }
+.usg-coming-soon { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 120px; padding: 28px 20px; border: 2px dashed #cfd6e3; border-radius: var(--radius); background: linear-gradient(135deg, var(--soft) 0%, #fff 100%); color: var(--navy); font-weight: 800; font-size: 1.15rem; letter-spacing: .02em; text-transform: uppercase; }
+.usg-coming-soon .usg-icon { color: var(--gold); width: 26px; height: 26px; }
+.usg-soon { margin-bottom: 32px; }
 .usg-alert { border-radius: var(--radius-sm); padding: 12px 16px; font-weight: 600; }
 .usg-alert--ok { background: #e8f7ef; color: var(--green-d); }
 .usg-alert--error { background: #fde8eb; color: var(--red-d); }

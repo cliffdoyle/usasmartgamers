@@ -217,6 +217,10 @@
 		var data = [];
 		var esc = function (s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; };
 		var render = function () {
+			if (!data.length) {
+				finder.innerHTML = '<div class="usg-coming-soon"><span>Coming soon</span></div>';
+				return;
+			}
 			var f = {}; $$('input,select', finder).forEach(function (i) { f[i.name] = i.value; });
 			var q = (f.q || '').toLowerCase();
 			var list = data.filter(function (o) {

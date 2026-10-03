@@ -9,12 +9,9 @@ defined( 'ABSPATH' ) || exit;
 class USG_Seeder {
 
 	private bool $update;
-	private array $ops     = array();
-	private array $offers  = array();
 	private array $lists   = array();
 	private array $authors = array();
 	private array $pages   = array();
-	private array $slots   = array();
 	private array $cats    = array();
 
 	public function __construct( bool $update ) {
@@ -114,19 +111,15 @@ class USG_Seeder {
 		$this->states();
 		$this->authors();
 		$this->taxonomies();
-		$this->operators();
 		$this->toplists();
-		$this->slots();
 		$this->pages();
-		$this->links();
-		$this->posts();
+		$this->short_titles();
 		$this->assign_team();
-		$this->rewards();
 		$this->menus();
 		$this->settings();
 		// Rules are rebuilt on the next request, when taxonomies register with the new category base.
 		delete_option( 'rewrite_rules' );
-		WP_CLI::success( 'Seed complete. Remember: operators, offers, slots and news are SAMPLE content — replace before launch.' );
+		WP_CLI::success( 'Seed complete. Add operators, offers, slots and news in wp-admin — empty sections show "Coming soon" until then.' );
 	}
 
 	private function states(): void {
@@ -162,9 +155,9 @@ class USG_Seeder {
 					'helpline'      => '1-800-GAMBLER',
 					'bill'          => $bills[ $code ][0] ?? '',
 					'bill_notes'    => $bills[ $code ][1] ?? '',
-					'last_action'   => isset( $bills[ $code ] ) ? 'Sample status — verify before publishing' : '',
+					'last_action'   => '',
 				),
-				'Sample legal-status data — verify every state before launch.'
+				''
 			);
 		}
 		$this->log( 'States seeded.' );
@@ -201,7 +194,7 @@ class USG_Seeder {
 	private function assign_team(): void {
 		$v      = $this->authors['vanessa'];
 		$g      = $this->authors['george'];
-		$george = array( 'sweepstakes-casinos', 'sweepstakes-casinos/sweepstars', 'sweepstakes-casinos/lucky-frontier', 'sports-betting', 'sports-betting/gridiron-bet', 'slots', 'news', 'casino-bill-tracker', 'tools/odds-converter', 'tools/implied-probability', 'tools/hedge-calculator', 'tools/martingale' );
+		$george = array( 'sweepstakes-casinos', 'sports-betting', 'slots', 'news', 'casino-bill-tracker', 'tools/odds-converter', 'tools/implied-probability', 'tools/hedge-calculator', 'tools/martingale' );
 		foreach ( get_posts( array( 'post_type' => array( 'page', 'post', 'usg_blog', 'usg_slot' ), 'post_status' => 'any', 'posts_per_page' => -1 ) ) as $post ) {
 			if ( 'page' === $post->post_type ) {
 				$author = in_array( get_page_uri( $post ), $george, true ) ? $g : $v;
@@ -222,180 +215,22 @@ class USG_Seeder {
 		foreach ( array( 'PayPal' => '1–2 days', 'Visa' => '3–5 days', 'Mastercard' => '3–5 days', 'Venmo' => 'Same day', 'Apple Pay' => '1–2 days', 'Play+ prepaid' => 'Same day', 'Online banking (ACH)' => '1–3 days', 'PayNearMe (cash)' => 'N/A', 'Skrill' => '1–2 days', 'Cash at casino cage' => 'Instant' ) as $name => $speed ) {
 			$this->term( 'usg_payment', $name, sanitize_title( $name ), array( 'speed' => $speed ) );
 		}
-		$provs = array(
-			'frontier-gaming' => array( 'Frontier Gaming (sample)', '2009', 'Las Vegas, NV' ),
-			'neon-reel'       => array( 'Neon Reel Studios (sample)', '2015', 'Austin, TX' ),
-			'atlas-play'      => array( 'Atlas Play (sample)', '2012', 'Newark, NJ' ),
-		);
-		foreach ( $provs as $slug => $p ) {
-			$this->term( 'usg_provider', $p[0], $slug, array( 'founded' => $p[1], 'hq' => $p[2] ), 'Fictional sample studio used to demonstrate provider pages. Replace with real providers.' );
-		}
 		foreach ( array( 'legislation' => 'Legislation', 'industry' => 'Industry', 'promotions' => 'Promotions', 'guides' => 'Guides', 'new-jersey' => 'New Jersey', 'pennsylvania' => 'Pennsylvania', 'michigan' => 'Michigan' ) as $slug => $name ) {
 			$this->cats[ $slug ] = $this->term( 'category', $name, $slug );
 		}
-		$this->log( 'Payments, providers, news categories ready.' );
+		$this->log( 'Payment methods & news categories ready.' );
 	}
 
-	private function operators(): void {
-		$casino_states = array( 'NJ', 'PA', 'MI', 'WV' );
-		$sweeps_excl   = array( 'WA', 'ID', 'NV', 'MI', 'MT', 'CT', 'NJ', 'NY', 'CA', 'LA', 'DE' );
-		$sports_states = array( 'AZ', 'CO', 'IL', 'IN', 'IA', 'KS', 'MD', 'MA', 'MI', 'NJ', 'NY', 'NC', 'OH', 'PA', 'TN', 'VA' );
-		$scores_casino = array( 'Welcome bonus', 'Game variety', 'Payout speed', 'App & UX', 'Customer support', 'Existing-player perks' );
-		$scores_sweeps = array( 'Free coins & bonus', 'Prize redemption', 'Game quality', 'Website & app', 'Customer support', 'Ongoing promotions' );
-		$scores_sports = array( 'Welcome offer', 'Odds & markets', 'Live betting', 'App & UX', 'Payouts', 'Existing-user promos' );
-		$terms_casino  = '21+ and physically present in an eligible state. New customers only. Minimum deposit required. Bonus funds subject to wagering requirements and expire after 14 days. Game restrictions apply. Gambling problem? Call 1-800-GAMBLER. SAMPLE TERMS — replace with the operator’s official terms.';
-		$terms_sweeps  = 'No purchase necessary. Void where prohibited. 18+ (21+ in some states). Sweeps Coins have no cash value until redeemed per the official rules. SAMPLE TERMS — replace with the operator’s official rules.';
-		$terms_sports  = '21+. New customers in eligible states only. Bonus bets expire after 7 days and stake is not returned. Gambling problem? Call 1-800-GAMBLER. SAMPLE TERMS — replace with the operator’s official terms.';
-
-		$list = array(
-			'liberty-spins'     => array( 'Liberty Spins Casino', 'casino', '#1e3a8a', 4.7, 'listed', $casino_states, 'Fast payouts', 'Up to $1,000 deposit match + 200 bonus spins', 'SMART1000', array( 'PayPal', 'Visa', 'Venmo', 'Play+ prepaid', 'Online banking (ACH)' ), '24 hours', '$10', '96.4%', '2,500+', array( 4.8, 4.9, 4.8, 4.6, 4.5, 4.4 ) ),
-			'stars-and-stripes' => array( 'Stars & Stripes Casino', 'casino', '#b91c1c', 4.6, 'listed', array_merge( $casino_states, array( 'CT' ) ), 'Huge game library', '100% match up to $500 + $25 on the house', 'USGSTARS', array( 'PayPal', 'Visa', 'Mastercard', 'Apple Pay' ), '1–2 days', '$10', '96.1%', '3,000+', array( 4.6, 5.0, 4.4, 4.7, 4.3, 4.5 ) ),
-			'golden-eagle'      => array( 'Golden Eagle Casino', 'casino', '#a16207', 4.5, 'listed', array( 'NJ', 'PA', 'MI' ), 'Best loyalty perks', '500 bonus spins on a $10 deposit', '', array( 'Visa', 'Mastercard', 'PayNearMe (cash)', 'Cash at casino cage' ), '1–3 days', '$10', '96.0%', '1,800+', array( 4.5, 4.4, 4.3, 4.5, 4.6, 4.8 ) ),
-			'empire-reels'      => array( 'Empire Reels Casino', 'casino', '#4c1d95', 4.4, 'listed', array( 'NJ', 'PA', 'WV', 'DE' ), 'Low wagering', '$25 no-deposit bonus + 100% match up to $1,000', 'EMPIRE25', array( 'PayPal', 'Skrill', 'Visa' ), '1–2 days', '$20', '95.8%', '1,500+', array( 4.6, 4.2, 4.4, 4.3, 4.2, 4.3 ) ),
-			'coastline'         => array( 'Coastline Casino', 'casino', '#0e7490', 4.3, 'listed', array( 'NJ', 'MI', 'RI' ), 'Great live dealer', 'Up to $500 back in casino bonus on first-day losses', '', array( 'PayPal', 'Visa', 'Online banking (ACH)' ), '2–3 days', '$10', '95.9%', '1,200+', array( 4.3, 4.3, 4.1, 4.4, 4.3, 4.2 ) ),
-			'patriot-play'      => array( 'Patriot Play Casino', 'casino', '#14532d', 4.2, 'listed', array( 'PA', 'MI', 'WV' ), 'Daily jackpots', '100 bonus spins + 100% match up to $250', 'PATRIOT', array( 'Visa', 'Venmo', 'Play+ prepaid' ), '1–2 days', '$5', '95.6%', '900+', array( 4.2, 4.0, 4.3, 4.2, 4.1, 4.4 ) ),
-			'sweepstars'        => array( 'SweepStars Social Casino', 'sweepstakes', '#7c3aed', 4.6, 'all_except', $sweeps_excl, 'Fast redemptions', '100,000 Gold Coins + 5 free Sweeps Coins on sign-up', '', array( 'Visa', 'Mastercard', 'Online banking (ACH)', 'Skrill' ), '1–3 days', 'Free to play', '96.0%', '800+', array( 4.6, 4.7, 4.5, 4.6, 4.3, 4.5 ) ),
-			'lucky-frontier'    => array( 'Lucky Frontier', 'sweepstakes', '#c2410c', 4.5, 'all_except', $sweeps_excl, 'Daily login bonus', '50,000 GC + 3 SC free, plus 200% first purchase bonus', 'FRONTIER', array( 'Visa', 'Apple Pay', 'Skrill' ), '2–4 days', 'Free to play', '95.5%', '600+', array( 4.6, 4.4, 4.4, 4.5, 4.2, 4.6 ) ),
-			'coin-canyon'       => array( 'Coin Canyon', 'sweepstakes', '#b45309', 4.4, 'all_except', $sweeps_excl, 'Exclusive slots', '25,000 GC + 2.5 SC free on sign-up', '', array( 'Visa', 'Mastercard', 'Online banking (ACH)' ), '3–5 days', 'Free to play', '95.7%', '500+', array( 4.3, 4.4, 4.5, 4.3, 4.2, 4.4 ) ),
-			'big-sky-sweeps'    => array( 'Big Sky Sweeps', 'sweepstakes', '#0369a1', 4.2, 'all_except', $sweeps_excl, 'Low redemption minimum', '10 free SC after email verification', '', array( 'Visa', 'Skrill' ), '2–5 days', 'Free to play', '95.2%', '400+', array( 4.1, 4.4, 4.2, 4.1, 4.0, 4.2 ) ),
-			'gridiron-bet'      => array( 'Gridiron Bet', 'sportsbook', '#166534', 4.6, 'listed', $sports_states, 'Best odds boosts', 'Bet $5, get $200 in bonus bets', '', array( 'PayPal', 'Visa', 'Venmo', 'Online banking (ACH)' ), '24 hours', '$5', 'N/A', '30+ sports', array( 4.7, 4.6, 4.5, 4.7, 4.6, 4.5 ) ),
-			'fastbreak'         => array( 'Fastbreak Sportsbook', 'sportsbook', '#9a3412', 4.4, 'listed', $sports_states, 'Same-game parlays', 'First bet safety net up to $1,000', 'FASTUSG', array( 'PayPal', 'Visa', 'Apple Pay' ), '1–2 days', '$10', 'N/A', '25+ sports', array( 4.4, 4.5, 4.4, 4.3, 4.3, 4.4 ) ),
-			'global-spins'      => array( 'Global Spins International', 'casino', '#334155', 4.0, 'international', array(), 'International players', 'Welcome package for non-US players', '', array( 'Visa', 'Skrill' ), '2–3 days', '$20', '96.0%', '2,000+', array( 4.0, 4.1, 4.0, 4.0, 3.9, 4.0 ) ),
-		);
-		$i = 0;
-		foreach ( $list as $slug => $o ) {
-			$labels = 'sweepstakes' === $o[1] ? $scores_sweeps : ( 'sportsbook' === $o[1] ? $scores_sports : $scores_casino );
-			$scores = array();
-			foreach ( $labels as $k => $label ) {
-				$scores[] = array( 'label' => $label, 'score' => (string) $o[14][ $k ], 'note' => 'Sample justification — describe what the tester found for ' . strtolower( $label ) . '.' );
-			}
-			$id = $this->upsert(
-				'usg_operator',
-				$slug,
-				array( 'post_title' => $o[0], 'post_excerpt' => 'SAMPLE operator for demonstration.' ),
-				array(
-					'vertical'      => $o[1],
-					'brand_color'   => $o[2],
-					'rating'        => (string) $o[3],
-					'availability'  => $o[4],
-					'states'        => $o[5],
-					'pill'          => $o[6],
-					'tagline'       => $o[7],
-					'affiliate_url' => 'https://example.com/go/' . $slug . '?subid={tag}',
-					'payout_speed'  => $o[10],
-					'min_deposit'   => $o[11],
-					'win_rate'      => $o[12],
-					'games_count'   => $o[13],
-					'license'       => 'casino' === $o[1] && 'international' !== $o[4] ? 'State gaming regulators (see availability)' : ( 'sweepstakes' === $o[1] ? 'Operates under sweepstakes laws' : 'State regulators' ),
-					'launched'      => (string) ( 2014 + $i % 8 ),
-					'support'       => 'Live chat, email',
-					'app_ios'       => number_format( 4.3 + ( $i % 6 ) / 10, 1 ) . '/5',
-					'app_android'   => number_format( 4.1 + ( $i % 7 ) / 10, 1 ) . '/5',
-					'scores'        => $scores,
-					'pros'          => "Strong welcome offer with clear terms\nQuick, reliable withdrawals\nPolished mobile app",
-					'cons'          => "Limited availability by state\nLoyalty program could be clearer",
-					'suits'         => "Want a big welcome bonus with fair wagering\nPrefer fast cash-outs to e-wallets\nPlay mostly on mobile",
-					'terms'         => 'sweepstakes' === $o[1] ? $terms_sweeps : ( 'sportsbook' === $o[1] ? $terms_sports : $terms_casino ),
-				)
-			);
-			wp_set_object_terms( $id, array_map( 'sanitize_title', $o[9] ), 'usg_payment' );
-			$this->ops[ $slug ] = $id;
-
-			$this->offers[ $slug ] = $this->upsert(
-				'usg_offer',
-				$slug . '-welcome',
-				array( 'post_title' => $o[0] . ' — welcome offer', 'menu_order' => 10 ),
-				array(
-					'operator'     => $id,
-					'headline'     => $o[7],
-					'bullets'      => "Sample offer — replace with the live promotion\nNew players only\n" . ( $o[8] ? 'Use code ' . $o[8] . ' at sign-up' : 'No promo code needed' ),
-					'cta_label'    => 'sweepstakes' === $o[1] ? 'Play for free' : 'Claim offer',
-					'promo_code'   => $o[8],
-					'offer_type'   => 'sweepstakes' === $o[1] ? 'sweeps' : 'welcome',
-					'availability' => 'inherit',
-				)
-			);
-			$i++;
-		}
-		// Geo demo: a New Jersey-only offer that outranks the national one for NJ visitors.
-		$this->offers['liberty-nj'] = $this->upsert(
-			'usg_offer',
-			'liberty-spins-nj-exclusive',
-			array( 'post_title' => 'Liberty Spins — NJ exclusive', 'menu_order' => 1 ),
-			array( 'operator' => $this->ops['liberty-spins'], 'headline' => 'NJ exclusive: $50 no-deposit bonus + up to $1,000 match', 'bullets' => "Sample New Jersey-only offer (demonstrates geo-targeting)\n$50 credited after verification", 'cta_label' => 'Claim NJ offer', 'promo_code' => 'SMARTNJ', 'offer_type' => 'no_deposit', 'exclusive' => '1', 'availability' => 'listed', 'states' => array( 'NJ' ) )
-		);
-		$this->log( 'Sample operators & offers ready.' );
-	}
 
 	private function toplists(): void {
-		$mk = function ( string $slug, string $title, array $ops ) {
-			$items = array();
-			foreach ( $ops as $o ) {
-				$items[] = array( 'operator' => $this->ops[ $o ], 'offer' => '', 'pill' => '' );
-			}
-			$this->lists[ $slug ] = $this->upsert( 'usg_toplist', $slug, array( 'post_title' => $title ), array( 'geo' => '1', 'items' => $items ) );
-		};
-		$mk( 'top-casinos', 'Top online casinos', array( 'liberty-spins', 'stars-and-stripes', 'golden-eagle', 'empire-reels', 'coastline', 'patriot-play', 'global-spins' ) );
-		$mk( 'top-sweeps', 'Top sweepstakes casinos', array( 'sweepstars', 'lucky-frontier', 'coin-canyon', 'big-sky-sweeps', 'global-spins' ) );
-		$mk( 'top-sportsbooks', 'Top sportsbooks', array( 'gridiron-bet', 'fastbreak', 'global-spins' ) );
-		$mk( 'home-best', 'Homepage — best overall', array( 'liberty-spins', 'sweepstars', 'stars-and-stripes', 'gridiron-bet', 'lucky-frontier', 'golden-eagle', 'global-spins' ) );
-		$this->log( 'Toplists ready.' );
-	}
-
-	private function slots(): void {
-		$list = array(
-			'liberty-bell-riches'    => array( 'Liberty Bell Riches', 'frontier-gaming', 96.2, 'Medium', '5,000x', 4.6, "Free spins\nWild multipliers\nHold & spin" ),
-			'gold-rush-canyon'       => array( 'Gold Rush Canyon', 'frontier-gaming', 96.5, 'High', '10,000x', 4.5, "Cascading reels\nFree spins\nBuy feature" ),
-			'buffalo-thunder-plains' => array( 'Buffalo Thunder Plains', 'frontier-gaming', 95.9, 'Medium-high', '7,500x', 4.4, "Xtra ways\nFree spins\nScatters" ),
-			'neon-nights-megaways'   => array( 'Neon Nights Megaways', 'neon-reel', 96.4, 'High', '20,000x', 4.7, "Megaways\nUnlimited multipliers\nFree spins" ),
-			'lucky-lobster-wharf'    => array( 'Lucky Lobster Wharf', 'neon-reel', 96.0, 'Medium', '3,000x', 4.2, "Pick bonus\nWilds\nScatters" ),
-			'pharaohs-vault'         => array( 'Pharaoh’s Vault', 'atlas-play', 96.1, 'High', '12,500x', 4.3, "Expanding symbols\nFree spins\nGamble feature" ),
-			'stars-and-bars-deluxe'  => array( 'Stars & Bars Deluxe', 'atlas-play', 95.5, 'Low', '1,000x', 4.0, "Classic 3-reel\nRespins\nWild multipliers" ),
-			'dragon-pearl-fortune'   => array( 'Dragon Pearl Fortune', 'atlas-play', 96.3, 'Medium', '8,888x', 4.5, "Hold & spin\nFour jackpots\nFree spins" ),
-		);
-		foreach ( $list as $slug => $s ) {
-			$content = self::p( '<strong>Sample slot review.</strong> ' . $s[0] . ' is a fictional game used to demonstrate the slot template. Replace it with real slot reviews — each one should cover gameplay, features, RTP, volatility and where to play.' )
-				. self::h( 'How to play ' . $s[0] )
-				. self::p( 'Choose your stake, spin the reels and land matching symbols from left to right. Scatters trigger the bonus round, where multipliers and extra spins drive the biggest wins.' )
-				. self::h( $s[0] . ' bonus features' )
-				. self::ul( usg_lines( $s[6] ) )
-				. self::h( 'Final thoughts' )
-				. self::p( 'With an RTP of ' . $s[2] . '% and ' . strtolower( $s[3] ) . ' volatility, this game suits players who enjoy a balance of frequent hits and big-win potential. Always try the free demo first and set a budget before playing for real money.' );
-			$id = $this->upsert(
-				'usg_slot',
-				$slug,
-				array( 'post_title' => $s[0], 'post_content' => $content, 'post_excerpt' => 'Sample slot review: ' . $s[0] . '.', 'post_author' => $this->authors['chris'] ),
-				array( 'rtp' => (string) $s[2], 'volatility' => $s[3], 'max_win' => $s[4], 'rating' => (string) $s[5], 'features' => $s[6], 'bet_range' => '$0.20 – $100', 'paylines' => '25', 'reels' => '5×3', 'release' => '2025-0' . ( 1 + strlen( $slug ) % 9 ) . '-15', 'operators' => array( $this->ops['liberty-spins'], $this->ops['stars-and-stripes'], $this->ops['sweepstars'] ), 'fact_checker' => $this->authors['maya'] )
-			);
-			wp_set_object_terms( $id, $s[1], 'usg_provider' );
-			$this->slots[ $slug ] = $id;
+		// Empty containers: editors add operators in wp-admin (Operators & Offers → Toplists); pages pick them up automatically.
+		foreach ( array( 'top-casinos' => 'Top online casinos', 'top-sweeps' => 'Top sweepstakes casinos', 'top-sportsbooks' => 'Top sportsbooks', 'home-best' => 'Homepage — best overall' ) as $slug => $title ) {
+			$this->lists[ $slug ] = $this->upsert( 'usg_toplist', $slug, array( 'post_title' => $title ), array( 'geo' => '1', 'items' => array() ) );
 		}
-		$this->log( 'Sample slots ready.' );
+		$this->log( 'Toplists ready (empty).' );
 	}
 
-	private function review_content( string $op, string $vertical_label ): string {
-		$id   = $this->ops[ $op ];
-		$name = get_the_title( $id );
-		$c    = self::b( 'review-summary', array( 'operator' => $id ) )
-			. self::b( 'key-takeaways', array( 'items' => "Sample review — replace with hands-on testing notes\nWelcome offer: " . usg_meta( $id, 'tagline' ) . "\nPayouts in " . usg_meta( $id, 'payout_speed' ) . ' on average' ) )
-			. self::h( 'My verdict on ' . $name )
-			. self::p( '<strong>This is sample content.</strong> Write your honest, first-hand verdict here: who the ' . strtolower( $vertical_label ) . ' is best for, what stood out during testing, and any drawbacks players should know about before signing up.' )
-			. self::b( 'user-reviews', array( 'operator' => $id, 'title' => 'Real player reviews of ' . $name ) )
-			. self::h( $name . ' bonus & promo code | ' . number_format( (float) usg_meta( $id, 'scores' )[0]['score'], 1 ) . ' / 5' )
-			. self::b( 'claim-button', array( 'operator' => $id, 'style' => 'green', 'tag' => 'review-bonus' ) )
-			. self::p( 'Explain exactly how to claim the offer step by step, the wagering requirement, eligible games, expiry and any state restrictions.' )
-			. self::b( 'expert-insight', array( 'author' => $this->authors['maya'], 'quote' => 'Always check which games count 100% toward wagering. A generous match bonus is only valuable if you can realistically clear it.' ) )
-			. self::h( 'Games & software | ' . number_format( (float) usg_meta( $id, 'scores' )[1]['score'], 1 ) . ' / 5' )
-			. self::p( 'Describe the game library: number of slots, table games, live dealer, exclusives and the studios powering them.' )
-			. self::h( 'Deposits & withdrawals | ' . number_format( (float) usg_meta( $id, 'scores' )[2]['score'], 1 ) . ' / 5' )
-			. self::p( 'Record the payment methods you tested, deposit limits and exactly how long each withdrawal took.' )
-			. self::h( 'Pros & cons of ' . $name )
-			. self::b( 'pros-cons', array( 'operator' => $id ) )
-			. self::h( 'Is ' . $name . ' legit and safe?' )
-			. self::p( 'Cover licensing, responsible-gambling tools (deposit limits, time-outs, self-exclusion) and account security.' )
-			. self::b( 'faq', array( 'title' => $name . ' FAQ', 'items' => "Q: Is $name legal?\nA: Sample answer — list the states where it is licensed and the regulator for each.\n\nQ: How fast does $name pay out?\nA: In our sample testing, withdrawals arrived in " . usg_meta( $id, 'payout_speed' ) . ".\n\nQ: Does $name have a promo code?\nA: " . ( usg_meta( $this->offers[ $op ], 'promo_code' ) ? 'Yes — use ' . usg_meta( $this->offers[ $op ], 'promo_code' ) . ' when you sign up.' : 'No code is needed; the offer applies automatically.' ) ) );
-		return $c;
-	}
+
 
 	private function pages(): void {
 		$J  = $this->authors['jordan'];
@@ -429,22 +264,17 @@ class USG_Seeder {
 			. self::p( 'Online casinos are regulated state by state. Use the map below to see where they are live, where bills are being considered, and where they are unlikely to arrive soon.' )
 			. self::b( 'state-map', array( 'vertical' => 'casino' ) )
 			. self::b( 'state-table', array( 'title' => 'Legal online casino states', 'vertical' => 'casino', 'filter' => 'legal' ) )
-			. self::h( 'Compare the top casinos side by side' )
-			. self::b( 'comparison', array( 'operators' => array( $this->ops['liberty-spins'], $this->ops['stars-and-stripes'], $this->ops['golden-eagle'], $this->ops['empire-reels'] ) ) )
 			. self::h( 'Understanding bonus terms and wagering requirements' )
 			. self::p( 'A wagering requirement tells you how many times you must play through a bonus before you can withdraw winnings. Use our <a href="/tools/casino-bonus-calculator/">bonus calculator</a> to see what an offer is really worth.' )
 			. self::b( 'faq', array( 'title' => 'Online casino FAQ', 'items' => "Q: Can I play at an online casino if I live in a non-legal state?\nA: You must be physically located inside a legal state when you play. Sweepstakes casinos are an alternative in most other states.\n\nQ: How do I know a casino is licensed?\nA: Licensed casinos display their state regulator’s seal and licence number, usually in the website footer.\n\nQ: What is the fastest payout method?\nA: E-wallets like PayPal and Venmo, and prepaid Play+ cards, are usually the fastest." ) ),
-			array( 'meta' => $fc + array( 'sticky_operator' => $this->ops['liberty-spins'] ), 'excerpt' => 'Our ranked list of the best legal real-money online casinos in the US.' )
+			array( 'meta' => $fc, 'excerpt' => 'Our ranked list of the best legal real-money online casinos in the US.' )
 		);
-		foreach ( array( 'liberty-spins', 'stars-and-stripes', 'golden-eagle' ) as $op ) {
-			$this->page( 'online-casinos/' . $op, 'My honest ' . get_the_title( $this->ops[ $op ] ) . ' review & bonus code ([month] [year])', $this->review_content( $op, 'Casino' ), array( 'meta' => $fc + array( 'sticky_operator' => $this->ops[ $op ] ) ) );
-		}
 		$states = array( 'new-jersey' => array( 'NJ', 'New Jersey', 'NJ Division of Gaming Enforcement', '2013' ), 'pennsylvania' => array( 'PA', 'Pennsylvania', 'Pennsylvania Gaming Control Board', '2019' ), 'michigan' => array( 'MI', 'Michigan', 'Michigan Gaming Control Board', '2021' ) );
 		foreach ( $states as $slug => $s ) {
 			$this->page(
 				'online-casinos/' . $slug,
 				'Best ' . $s[1] . ' Online Casinos ([month] [year]): Legal ' . $s[0] . ' Casino Apps',
-				self::p( 'Online casinos have been legal in ' . $s[1] . ' since ' . $s[3] . ' (sample data — verify). Every site below is licensed by the ' . $s[2] . '.' )
+				self::p( 'Online casinos have been legal in ' . $s[1] . ' since ' . $s[3] . '. Every site below is licensed by the ' . $s[2] . '.' )
 				. self::b( 'toplist', array( 'toplist' => $L['top-casinos'], 'title' => 'Top ' . $s[0] . ' online casinos for [month] [year]', 'skin' => 'cards', 'state' => $s[0], 'tag' => 'state-' . strtolower( $s[0] ) ) )
 				. self::h( 'Is online gambling legal in ' . $s[1] . '?' )
 				. self::p( 'Yes. Players must be 21+ and physically located in ' . $s[1] . '. Operators use geolocation to confirm your location before you can play for real money.' )
@@ -483,11 +313,8 @@ class USG_Seeder {
 			. self::h( 'How sweepstakes casinos work' )
 			. self::p( 'You receive free Gold Coins (for fun) and Sweeps Coins (redeemable) when you sign up and log in daily. No purchase is ever necessary to play.' )
 			. self::b( 'faq', array( 'items' => "Q: Are sweepstakes casinos legal?\nA: They operate under US sweepstakes laws and are available in most states; a growing number of states restrict them.\n\nQ: Can I win real money?\nA: Sweeps Coins won through play can be redeemed for cash prizes once you meet the minimum and verify your identity." ) ),
-			array( 'author' => $C, 'meta' => $fc + array( 'sticky_operator' => $this->ops['sweepstars'] ) )
+			array( 'author' => $C, 'meta' => $fc )
 		);
-		foreach ( array( 'sweepstars', 'lucky-frontier' ) as $op ) {
-			$this->page( 'sweepstakes-casinos/' . $op, get_the_title( $this->ops[ $op ] ) . ' review ([month] [year]): Free coins & promo code', $this->review_content( $op, 'Sweepstakes casino' ), array( 'author' => $C, 'meta' => $fc + array( 'sticky_operator' => $this->ops[ $op ] ) ) );
-		}
 
 		// Sports.
 		$this->page(
@@ -499,9 +326,8 @@ class USG_Seeder {
 			. self::b( 'state-map', array( 'vertical' => 'sports' ) )
 			. self::h( 'Betting tools' )
 			. self::b( 'link-grid', array( 'columns' => '3', 'links' => "Odds converter|/tools/odds-converter/|American, decimal and fractional\nImplied probability|/tools/implied-probability/|Find the vig on any market\nHedge calculator|/tools/hedge-calculator/|Lock in profit on a futures bet" ) ),
-			array( 'meta' => $fc + array( 'sticky_operator' => $this->ops['gridiron-bet'] ) )
+			array( 'meta' => $fc )
 		);
-		$this->page( 'sports-betting/gridiron-bet', 'Gridiron Bet review ([month] [year]): Promo code & app', $this->review_content( 'gridiron-bet', 'Sportsbook' ), array( 'meta' => $fc + array( 'sticky_operator' => $this->ops['gridiron-bet'] ) ) );
 
 		// Slots.
 		$this->page(
@@ -512,8 +338,7 @@ class USG_Seeder {
 			. self::h( 'Best casinos for slots' )
 			. self::b( 'toplist', array( 'toplist' => $L['top-casinos'], 'skin' => 'table', 'limit' => 5, 'tag' => 'slots-hub' ) )
 			. self::h( 'RTP and volatility explained' )
-			. self::p( '<strong>RTP</strong> (return to player) is the share of all wagers a slot pays back over millions of spins. <strong>Volatility</strong> describes how often and how big the wins are: low volatility pays small amounts often; high volatility pays rarely but bigger.' )
-			. self::b( 'link-grid', array( 'title' => 'Browse by studio', 'columns' => '3', 'links' => "Frontier Gaming|/slots/frontier-gaming/|Sample provider\nNeon Reel Studios|/slots/neon-reel/|Sample provider\nAtlas Play|/slots/atlas-play/|Sample provider" ) ),
+			. self::p( '<strong>RTP</strong> (return to player) is the share of all wagers a slot pays back over millions of spins. <strong>Volatility</strong> describes how often and how big the wins are: low volatility pays small amounts often; high volatility pays rarely but bigger.' ),
 			array( 'author' => $C, 'meta' => $fc )
 		);
 
@@ -526,7 +351,7 @@ class USG_Seeder {
 		$this->page(
 			'learn',
 			'Learn Hub: Casino Games & Betting Strategy Guides',
-			self::b( 'link-grid', array( 'title' => 'Start here', 'columns' => '3', 'links' => "How wagering requirements work|/news/how-wagering-requirements-work/|Bonus maths in plain English\nRTP & volatility|/news/understanding-rtp-and-volatility/|Pick the right slots for your style\nSpotting a legit sweepstakes casino|/news/signs-a-sweepstakes-casino-is-legit/|Five checks before you sign up\nWhat legalization changes|/news/what-happens-when-a-state-legalizes-online-casinos/|From bill to launch\nResponsible gambling|/responsible-gambling/|Tools to stay in control\nGambling tools|/tools/|Calculators for bonuses and bets" ) )
+			self::b( 'link-grid', array( 'title' => 'Start here', 'columns' => '3', 'links' => "Online casinos|/online-casinos/|How legal real-money casinos work\nSweepstakes casinos|/sweepstakes-casinos/|Free-to-play casinos explained\nSlots|/slots/|RTP, volatility and free demos\nBill tracker|/casino-bill-tracker/|Where online gambling is heading\nResponsible gambling|/responsible-gambling/|Tools to stay in control\nGambling tools|/tools/|Calculators for bonuses and bets" ) )
 			. self::b( 'news-feed', array( 'title' => 'From our blog', 'post_type' => 'usg_blog', 'count' => 3 ) ),
 			array( 'template' => $landing, 'author' => $M, 'excerpt' => 'Guides to casino games, bonuses and responsible play.' )
 		);
@@ -539,11 +364,17 @@ class USG_Seeder {
 			. self::p( 'These tools are for education. No calculator can overcome the house edge — always gamble within your means.' ),
 			array( 'template' => $landing, 'excerpt' => 'Calculators to understand bonuses, odds and betting systems.' )
 		);
-		foreach ( array( 'casino-bonus-calculator' => array( 'bonus', 'Casino Bonus & Wagering Calculator' ), 'odds-converter' => array( 'odds', 'Betting Odds Converter' ), 'implied-probability' => array( 'implied', 'Implied Probability & Vig Calculator' ), 'hedge-calculator' => array( 'hedge', 'Hedge Bet Calculator' ), 'martingale' => array( 'martingale', 'Martingale Strategy Calculator' ) ) as $slug => $t ) {
-			$this->page( 'tools/' . $slug, $t[1], self::p( 'Enter your numbers below — results update instantly.' ) . self::b( 'calculator', array( 'type' => $t[0] ) ) . self::h( 'How to use this calculator' ) . self::p( 'Sample explainer — describe each input, show a worked example and explain how to interpret the result.' ) . self::b( 'faq', array( 'items' => "Q: Is this calculator free?\nA: Yes, all our tools are free to use.\n\nQ: Can a calculator help me beat the house?\nA: No. Calculators help you understand value and risk, but the house edge always applies." ) ), array( 'meta' => $fc ) );
+		foreach ( array(
+			'casino-bonus-calculator' => array( 'bonus', 'Casino Bonus & Wagering Calculator', 'Enter your deposit, the match percentage, the maximum bonus and the wagering requirement. The calculator shows how much you must bet before you can withdraw, the expected loss while clearing the bonus at your chosen RTP, and whether the bonus is worth more than it costs.' ),
+			'odds-converter'          => array( 'odds', 'Betting Odds Converter', 'Choose the format you have (American, decimal or fractional), enter the odds and your stake. You will see the same price in every format, the implied probability and your potential payout.' ),
+			'implied-probability'     => array( 'implied', 'Implied Probability & Vig Calculator', 'Enter the American odds for both sides of a market. The calculator converts each price to a probability, shows the bookmaker margin (vig) and the fair, no-vig probability of each outcome.' ),
+			'hedge-calculator'        => array( 'hedge', 'Hedge Bet Calculator', 'Enter your original stake and odds, then the odds available on the opposite outcome. The calculator tells you how much to bet to lock in the same profit whatever happens.' ),
+			'martingale'              => array( 'martingale', 'Martingale Strategy Calculator', 'Enter your base bet, multiplier and the losing streak you want to survive. The table shows how quickly the required stakes grow — a clear illustration of why doubling up is risky.' ),
+		) as $slug => $t ) {
+			$this->page( 'tools/' . $slug, $t[1], self::p( 'Enter your numbers below — results update instantly.' ) . self::b( 'calculator', array( 'type' => $t[0] ) ) . self::h( 'How to use this calculator' ) . self::p( $t[2] ) . self::b( 'faq', array( 'items' => "Q: Is this calculator free?\nA: Yes, all our tools are free to use.\n\nQ: Can a calculator help me beat the house?\nA: No. Calculators help you understand value and risk, but the house edge always applies." ) ), array( 'meta' => $fc ) );
 		}
 		$this->page( 'casino-finder', 'Casino Finder: Search Every Operator', self::b( 'casino-finder', array() ), array( 'template' => $landing, 'excerpt' => 'Filter every casino, sweepstakes site and sportsbook by state, type and payment method.' ) );
-		$this->page( 'casino-bill-tracker', 'US Online Casino Bill Tracker [year]', self::p( 'Track online casino legislation in every state. <em>Sample data — verify each state before publishing.</em>' ) . self::b( 'bill-tracker', array() ), array( 'author' => $M ) );
+		$this->page( 'casino-bill-tracker', 'US Online Casino Bill Tracker [year]', self::p( 'Track online casino legislation in every state.' ) . self::b( 'bill-tracker', array() ), array( 'author' => $M ) );
 		$this->page( 'payments', 'Casino Payment Methods: Fastest Deposits & Withdrawals', self::p( 'How to fund your account and get paid fast at US online casinos.' ) . self::b( 'casino-finder', array() ), array( 'meta' => $fc ) );
 
 		// Community.
@@ -570,12 +401,10 @@ class USG_Seeder {
 		$this->log( 'Pages ready (' . count( $this->pages ) . ').' );
 	}
 
-	private function links(): void {
+	private function short_titles(): void {
 		$short = array(
-			'online-casinos' => 'Online Casinos', 'online-casinos/liberty-spins' => 'Liberty Spins review', 'online-casinos/stars-and-stripes' => 'Stars & Stripes review', 'online-casinos/golden-eagle' => 'Golden Eagle review',
-			'online-casinos/new-jersey' => 'New Jersey', 'online-casinos/pennsylvania' => 'Pennsylvania', 'online-casinos/michigan' => 'Michigan', 'online-casinos/bonus' => 'Casino Bonuses',
-			'sweepstakes-casinos' => 'Sweepstakes Casinos', 'sweepstakes-casinos/sweepstars' => 'SweepStars review', 'sweepstakes-casinos/lucky-frontier' => 'Lucky Frontier review',
-			'sports-betting' => 'Sports Betting', 'sports-betting/gridiron-bet' => 'Gridiron Bet review', 'slots' => 'Slots', 'news' => 'News', 'learn' => 'Learn', 'tools' => 'Tools',
+			'online-casinos' => 'Online Casinos', 'online-casinos/new-jersey' => 'New Jersey', 'online-casinos/pennsylvania' => 'Pennsylvania', 'online-casinos/michigan' => 'Michigan', 'online-casinos/bonus' => 'Casino Bonuses',
+			'sweepstakes-casinos' => 'Sweepstakes Casinos', 'sports-betting' => 'Sports Betting', 'slots' => 'Slots', 'news' => 'News', 'learn' => 'Learn', 'tools' => 'Tools',
 			'casino-bill-tracker' => 'Bill Tracker', 'casino-finder' => 'Casino Finder', 'payments' => 'Payments', 'rewards' => 'Smart Rewards', 'our-team' => 'Our Team', 'about' => 'About',
 		);
 		foreach ( $short as $path => $label ) {
@@ -583,44 +412,9 @@ class USG_Seeder {
 				update_post_meta( $this->pages[ $path ], '_usg_short_title', $label );
 			}
 		}
-		$map = array( 'liberty-spins' => 'online-casinos/liberty-spins', 'stars-and-stripes' => 'online-casinos/stars-and-stripes', 'golden-eagle' => 'online-casinos/golden-eagle', 'sweepstars' => 'sweepstakes-casinos/sweepstars', 'lucky-frontier' => 'sweepstakes-casinos/lucky-frontier', 'gridiron-bet' => 'sports-betting/gridiron-bet' );
-		foreach ( $map as $op => $path ) {
-			update_post_meta( $this->ops[ $op ], '_usg_review_page', $this->pages[ $path ] );
-		}
 	}
 
-	private function posts(): void {
-		$posts = array(
-			'how-wagering-requirements-work'                     => array( 'How wagering requirements really work', 'guides', 'A plain-English guide to playthrough, game weighting and bonus value.' ),
-			'understanding-rtp-and-volatility'                   => array( 'Understanding RTP and volatility before you spin', 'guides', 'Why two slots with the same RTP can feel completely different.' ),
-			'signs-a-sweepstakes-casino-is-legit'                => array( 'Five signs a sweepstakes casino is legit', 'industry', 'What to check before you sign up for any sweeps site.' ),
-			'what-happens-when-a-state-legalizes-online-casinos' => array( 'What happens after a state legalizes online casinos?', 'legislation', 'From signed bill to first bet: the typical timeline.' ),
-		);
-		foreach ( $posts as $slug => $p ) {
-			$id = $this->upsert(
-				'post',
-				$slug,
-				array(
-					'post_title'    => $p[0],
-					'post_excerpt'  => $p[2],
-					'post_author'   => $this->authors['jordan'],
-					'post_category' => array( $this->cats[ $p[1] ] ),
-					'post_content'  => self::p( '<strong>Sample article.</strong> ' . $p[2] . ' Replace this evergreen sample with your own reporting.' ) . self::h( 'The short version' ) . self::p( 'Summarise the key point in two or three sentences for readers in a hurry.' ) . self::h( 'The details' ) . self::p( 'Expand with examples, numbers and sources. Link to relevant reviews and tools — for example our <a href="/tools/casino-bonus-calculator/">bonus calculator</a>.' ) . self::h( 'What it means for players' ) . self::p( 'Close with practical takeaways, and remind readers to gamble responsibly.' ),
-				),
-				array( 'fact_checker' => $this->authors['maya'] )
-			);
-		}
-		foreach ( array( 'vegas-vs-atlantic-city' => 'Las Vegas vs. Atlantic City: which casino trip suits you?', 'psychology-of-near-misses' => 'The psychology of near-misses in slot games' ) as $slug => $title ) {
-			$this->upsert( 'usg_blog', $slug, array( 'post_title' => $title, 'post_author' => $this->authors['chris'], 'post_excerpt' => 'Sample Insights article.', 'post_content' => self::p( '<strong>Sample blog post.</strong> Lifestyle and opinion pieces live in the Insights section, separate from news.' ) . self::h( 'Section heading' ) . self::p( 'Your content here.' ) ) );
-		}
-		$this->log( 'Sample news & insights ready.' );
-	}
 
-	private function rewards(): void {
-		foreach ( array( 'prize-draw-entry' => array( 'Monthly prize draw entry', 1000, 'entry', 'One entry into our monthly prize draw.' ), 'gift-card-10' => array( '$10 digital gift card', 5000, 'gift_card', 'A $10 e-gift card delivered by email.' ), 'usg-cap' => array( 'USA Smart Gamers cap', 8000, 'merch', 'Embroidered cap shipped to US addresses.' ), 'gift-card-25' => array( '$25 digital gift card', 12000, 'gift_card', 'A $25 e-gift card delivered by email.' ) ) as $slug => $r ) {
-			$this->upsert( 'usg_reward', $slug, array( 'post_title' => $r[0], 'post_excerpt' => $r[3] ), array( 'cost' => (string) $r[1], 'reward_type' => $r[2], 'stock' => '', 'delivery' => 'Delivered within 5 business days' ) );
-		}
-	}
 
 	private function menu( string $name, string $location, array $tree ): void {
 		$menu = wp_get_nav_menu_object( $name );
@@ -663,25 +457,19 @@ class USG_Seeder {
 			'primary',
 			array(
 				array( 'Online Casinos', '/online-casinos/', array(
-					array( 'Top casinos', '/online-casinos/', array( array( 'Liberty Spins Casino', '/online-casinos/liberty-spins/', null, 'badge-trending' ), array( 'Stars & Stripes Casino', '/online-casinos/stars-and-stripes/' ), array( 'Golden Eagle Casino', '/online-casinos/golden-eagle/' ), array( 'All online casinos', '/online-casinos/' ) ) ),
+					array( 'Online casinos', '/online-casinos/', array( array( 'Best online casinos', '/online-casinos/' ), array( 'Casino bonuses', '/online-casinos/bonus/' ), array( 'Casino finder', '/casino-finder/' ), array( 'Payment methods', '/payments/' ) ) ),
 					array( 'By state', '/casino-bill-tracker/', array( array( 'New Jersey', '/online-casinos/new-jersey/' ), array( 'Pennsylvania', '/online-casinos/pennsylvania/' ), array( 'Michigan', '/online-casinos/michigan/' ), array( 'Bill tracker', '/casino-bill-tracker/', null, 'badge-new' ) ) ),
-					array( 'Bonuses & banking', '/online-casinos/bonus/', array( array( 'Casino bonuses', '/online-casinos/bonus/' ), array( 'Bonus calculator', '/tools/casino-bonus-calculator/' ), array( 'Payment methods', '/payments/' ), array( 'Casino finder', '/casino-finder/' ) ) ),
 				) ),
-				array( 'Sweepstakes', '/sweepstakes-casinos/', array(
-					array( 'Top sweepstakes casinos', '/sweepstakes-casinos/', array( array( 'SweepStars', '/sweepstakes-casinos/sweepstars/', null, 'badge-hot' ), array( 'Lucky Frontier', '/sweepstakes-casinos/lucky-frontier/' ), array( 'All sweepstakes casinos', '/sweepstakes-casinos/' ) ) ),
-				) ),
-				array( 'Slots', '/slots/', array(
-					array( 'Slots', '/slots/', array( array( 'Real money slots', '/slots/' ), array( 'Frontier Gaming', '/slots/frontier-gaming/' ), array( 'Neon Reel Studios', '/slots/neon-reel/' ), array( 'Atlas Play', '/slots/atlas-play/' ) ) ),
-					array( 'Top slot demos', '/slots/', array( array( 'Neon Nights Megaways', '/slots/neon-reel/neon-nights-megaways/', null, 'badge-hot' ), array( 'Liberty Bell Riches', '/slots/frontier-gaming/liberty-bell-riches/' ), array( 'Dragon Pearl Fortune', '/slots/atlas-play/dragon-pearl-fortune/' ) ) ),
-				) ),
+				array( 'Sweepstakes', '/sweepstakes-casinos/' ),
+				array( 'Slots', '/slots/' ),
 				array( 'Sports Betting', '/sports-betting/', array(
-					array( 'Sportsbooks', '/sports-betting/', array( array( 'Best sportsbooks', '/sports-betting/' ), array( 'Gridiron Bet review', '/sports-betting/gridiron-bet/' ) ) ),
+					array( 'Sportsbooks', '/sports-betting/', array( array( 'Best sportsbooks', '/sports-betting/' ) ) ),
 					array( 'Betting tools', '/tools/', array( array( 'Odds converter', '/tools/odds-converter/' ), array( 'Implied probability', '/tools/implied-probability/' ), array( 'Hedge calculator', '/tools/hedge-calculator/' ) ) ),
 				) ),
 				array( 'News & Guides', '/news/', array(
 					array( 'News', '/news/', array( array( 'Latest news', '/news/' ), array( 'Legislation', '/news/topic/legislation/' ), array( 'Industry', '/news/topic/industry/' ) ) ),
 					array( 'Learn', '/learn/', array( array( 'Learn hub', '/learn/' ), array( 'Insights blog', '/insights/' ), array( 'Responsible gambling', '/responsible-gambling/' ) ) ),
-					array( 'Tools', '/tools/', array( array( 'All tools', '/tools/' ), array( 'Martingale calculator', '/tools/martingale/' ) ) ),
+					array( 'Tools', '/tools/', array( array( 'All tools', '/tools/' ), array( 'Bonus calculator', '/tools/casino-bonus-calculator/' ), array( 'Martingale calculator', '/tools/martingale/' ) ) ),
 				) ),
 				array( 'Rewards', '/rewards/', null, 'badge-new' ),
 			)
@@ -705,7 +493,7 @@ class USG_Seeder {
 		update_option( 'users_can_register', 0 );
 		update_option( 'comment_moderation', 1 );
 		$s                            = get_option( 'usg_settings', array() );
-		$s['default_sticky_operator'] = $this->ops['liberty-spins'];
+		$s['default_sticky_operator'] = '';
 		update_option( 'usg_settings', $s );
 		$this->log( 'Settings applied.' );
 	}
@@ -716,5 +504,5 @@ WP_CLI::add_command(
 	function ( $args, $assoc ) {
 		( new USG_Seeder( ! empty( $assoc['update'] ) ) )->run();
 	},
-	array( 'shortdesc' => 'Seed USA Smart Gamers structure + sample content. Use --update to overwrite existing seeded items.' )
+	array( 'shortdesc' => 'Seed USA Smart Gamers site structure (pages, menus, states, toplists). Use --update to overwrite existing seeded items.' )
 );

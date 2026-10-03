@@ -153,7 +153,7 @@ function usg_block_news_feed( array $a ): string {
 	}
 	$q = new WP_Query( $args );
 	if ( ! $q->have_posts() ) {
-		return '';
+		return usg_coming_soon( (string) ( $a['title'] ?? '' ) );
 	}
 	$layout = 'list' === ( $a['layout'] ?? '' ) ? 'list' : 'grid';
 	$h      = '';
@@ -183,7 +183,7 @@ function usg_block_slot_grid( array $a ): string {
 	}
 	$ids = get_posts( $args );
 	if ( ! $ids ) {
-		return '';
+		return usg_coming_soon( (string) ( $a['title'] ?? '' ) );
 	}
 	$h = '';
 	foreach ( $ids as $id ) {
