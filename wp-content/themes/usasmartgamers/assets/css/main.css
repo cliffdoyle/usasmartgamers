@@ -85,8 +85,7 @@ table { border-collapse: collapse; width: 100%; }
 .site-branding img { max-height: 46px; width: auto; }
 .usg-brand { display: inline-flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; line-height: 1; }
 .usg-brand:hover { color: #fff; }
-.usg-brand:hover .usg-brand__chip { transform: rotate(-20deg); }
-.usg-brand__chip { flex-shrink: 0; transition: transform .35s ease; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .25)); }
+.usg-brand__chip { flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .25)); }
 .usg-brand__text { display: grid; gap: 4px; }
 .usg-brand__name { font-size: 1.3rem; font-weight: 600; letter-spacing: -.02em; white-space: nowrap; }
 .usg-brand__name b { font-weight: 800; }
