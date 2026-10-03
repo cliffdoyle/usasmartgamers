@@ -13,12 +13,20 @@ function usg_theme_icon( string $name ): string {
 	return usg_core_active() ? usg_icon( $name ) : '';
 }
 
+function usg_logo_chip_svg( int $size = 40 ): string {
+	$notches = '';
+	foreach ( array( 0, 45, 90, 135, 180, 225, 270, 315 ) as $a ) {
+		$notches .= '<rect x="21.5" y="1.6" width="5" height="6.8" rx="1.3" transform="rotate(' . $a . ' 24 24)"/>';
+	}
+	return '<svg class="usg-brand__chip" viewBox="0 0 48 48" width="' . $size . '" height="' . $size . '" aria-hidden="true" focusable="false"><circle cx="24" cy="24" r="23" fill="#C8102E"/><g fill="#FFFFFF">' . $notches . '</g><circle cx="24" cy="24" r="15.6" fill="#0F2A4A" stroke="#F5B700" stroke-width="1.5"/><path fill="#F5B700" d="M24 15.2l2.4 5.7 6.2.5-4.7 4 1.5 6.1L24 28.2l-5.4 3.3 1.5-6.1-4.7-4 6.2-.5z"/><path fill="#FFFFFF" opacity=".35" d="M24 15.2l2.4 5.7 6.2.5-4.7 4-3.9-3.7z"/></svg>';
+}
+
 function usg_theme_logo(): void {
 	if ( has_custom_logo() ) {
 		the_custom_logo();
 		return;
 	}
-	echo '<a class="usg-wordmark" href="' . esc_url( home_url( '/' ) ) . '" rel="home" aria-label="' . esc_attr( get_bloginfo( 'name' ) ) . '"><svg class="usg-wordmark__star" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path fill="currentColor" d="m12 2 2.9 6.6 7.1.6-5.4 4.7 1.6 7L12 17.3 5.8 21l1.6-7L2 9.2l7.1-.6z"/></svg><span><b>USA</b>Smart<i>Gamers</i></span></a>';
+	echo '<a class="usg-brand" href="' . esc_url( home_url( '/' ) ) . '" rel="home" aria-label="' . esc_attr( get_bloginfo( 'name' ) ) . '">' . usg_logo_chip_svg() . '<span class="usg-brand__text"><span class="usg-brand__name"><b>USA</b> Smart<i>Gamers</i></span><span class="usg-brand__tag">' . esc_html__( 'Play smarter · Play legal', 'usasmartgamers' ) . '</span></span></a>'; // phpcs:ignore WordPress.Security.EscapeOutput
 }
 
 function usg_crumb_title( int $id ): string {

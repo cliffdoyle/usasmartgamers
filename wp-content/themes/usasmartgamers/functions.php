@@ -61,6 +61,15 @@ add_action(
 	function () {
 		echo '<meta name="usg-build" content="' . esc_attr( usg_build_id() ) . '">' . "\n";
 		echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' . "\n";
+		if ( ! has_site_icon() ) {
+			$img = get_template_directory_uri() . '/assets/img/';
+			echo '<link rel="icon" type="image/svg+xml" href="' . esc_url( $img . 'logo-icon.svg' ) . '">' . "\n";
+			if ( file_exists( get_template_directory() . '/assets/img/apple-touch-icon.png' ) ) {
+				echo '<link rel="apple-touch-icon" href="' . esc_url( $img . 'apple-touch-icon.png' ) . '">' . "\n";
+				echo '<link rel="icon" type="image/png" sizes="180x180" href="' . esc_url( $img . 'apple-touch-icon.png' ) . '">' . "\n";
+			}
+			echo '<meta name="theme-color" content="#0f2a4a">' . "\n";
+		}
 	},
 	1
 );
