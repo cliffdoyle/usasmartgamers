@@ -13,9 +13,19 @@ class USG_Seeder {
 	private array $authors = array();
 	private array $pages   = array();
 	private array $cats    = array();
+	private array $created = array();
+	private bool $menus;
 
-	public function __construct( bool $update ) {
+	public function __construct( bool $update, bool $menus = false ) {
 		$this->update = $update;
+		$this->menus  = $menus;
+	}
+
+	/**
+	 * True when this run created the item (or --update is set) — existing editor-owned items are never touched.
+	 */
+	private function touched( int $id ): bool {
+		return $this->update || isset( $this->created[ $id ] );
 	}
 
 	/* ---------- helpers ---------- */
@@ -63,6 +73,7 @@ class USG_Seeder {
 			wp_update_post( wp_slash( $data ) );
 		} else {
 			$id = (int) wp_insert_post( wp_slash( $data ) );
+			$this->created[ $id ] = true;
 		}
 		$this->meta( $id, $meta );
 		return $id;
@@ -80,7 +91,9 @@ class USG_Seeder {
 			'menu_order'   => $opts['order'] ?? 0,
 		);
 		$id = $this->upsert( 'page', $slug, $args, $opts['meta'] ?? array(), $parent );
-		update_post_meta( $id, '_wp_page_template', $opts['template'] ?? 'default' );
+		if ( $this->touched( $id ) ) {
+			update_post_meta( $id, '_wp_page_template', $opts['template'] ?? 'default' );
+		}
 		$this->pages[ $path ] = $id;
 		return $id;
 	}
@@ -113,10 +126,14 @@ class USG_Seeder {
 		$this->taxonomies();
 		$this->toplists();
 		$this->pages();
+		$this->sections();
 		$this->short_titles();
 		$this->assign_team();
 		$this->menus();
-		$this->settings();
+		if ( $this->update || ! get_option( 'usg_seeded' ) ) {
+			$this->settings();
+		}
+		update_option( 'usg_seeded', USG_CORE_VERSION );
 		// Rules are rebuilt on the next request, when taxonomies register with the new category base.
 		delete_option( 'rewrite_rules' );
 		WP_CLI::success( 'Seed complete. Add operators, offers, slots and news in wp-admin — empty sections show "Coming soon" until then.' );
@@ -194,13 +211,13 @@ class USG_Seeder {
 	private function assign_team(): void {
 		$v      = $this->authors['vanessa'];
 		$g      = $this->authors['george'];
-		$george = array( 'sweepstakes-casinos', 'sports-betting', 'slots', 'news', 'casino-bill-tracker', 'tools/odds-converter', 'tools/implied-probability', 'tools/hedge-calculator', 'tools/martingale' );
-		foreach ( get_posts( array( 'post_type' => array( 'page', 'post', 'usg_blog', 'usg_slot' ), 'post_status' => 'any', 'posts_per_page' => -1 ) ) as $post ) {
-			if ( 'page' === $post->post_type ) {
-				$author = in_array( get_page_uri( $post ), $george, true ) ? $g : $v;
-			} else {
-				$author = 'usg_slot' === $post->post_type ? $v : $g;
+		$george = array( 'sweepstakes-casinos', 'sports-betting', 'slots', 'news', 'casino-bill-tracker', 'tools/odds-converter', 'tools/implied-probability', 'tools/hedge-calculator', 'tools/martingale', 'prediction-markets', 'online-lottery', 'how-to-bet', 'parimutuel-betting', 'kentucky-derby', 'preakness-stakes', 'taxes', 'revenue', 'tribal-casinos' );
+		foreach ( $this->pages as $path => $pid ) {
+			if ( ! $this->touched( $pid ) ) {
+				continue;
 			}
+			$post   = get_post( $pid );
+			$author = in_array( $path, $george, true ) ? $g : $v;
 			if ( (int) $post->post_author !== $author ) {
 				wp_update_post( array( 'ID' => $post->ID, 'post_author' => $author ) );
 			}
@@ -215,7 +232,11 @@ class USG_Seeder {
 		foreach ( array( 'PayPal' => '1–2 days', 'Visa' => '3–5 days', 'Mastercard' => '3–5 days', 'Venmo' => 'Same day', 'Apple Pay' => '1–2 days', 'Play+ prepaid' => 'Same day', 'Online banking (ACH)' => '1–3 days', 'PayNearMe (cash)' => 'N/A', 'Skrill' => '1–2 days', 'Cash at casino cage' => 'Instant' ) as $name => $speed ) {
 			$this->term( 'usg_payment', $name, sanitize_title( $name ), array( 'speed' => $speed ) );
 		}
-		foreach ( array( 'legislation' => 'Legislation', 'industry' => 'Industry', 'promotions' => 'Promotions', 'guides' => 'Guides', 'new-jersey' => 'New Jersey', 'pennsylvania' => 'Pennsylvania', 'michigan' => 'Michigan' ) as $slug => $name ) {
+		foreach ( array(
+			'legislation' => 'Legislation', 'industry' => 'Industry', 'promotions' => 'Promotions', 'guides' => 'Guides',
+			'commercial-gaming' => 'Commercial Gaming', 'federal' => 'Federal', 'financial' => 'Financial', 'las-vegas' => 'Las Vegas', 'mergers-acquisitions' => 'Mergers & Acquisitions', 'tribal-gaming' => 'Tribal Gaming', 'sports-betting-news' => 'Sports Betting', 'opinion' => 'Opinion',
+			'alabama' => 'Alabama', 'california' => 'California', 'florida' => 'Florida', 'illinois' => 'Illinois', 'maryland' => 'Maryland', 'michigan' => 'Michigan', 'minnesota' => 'Minnesota', 'missouri' => 'Missouri', 'nevada' => 'Nevada', 'new-jersey' => 'New Jersey', 'new-york' => 'New York', 'pennsylvania' => 'Pennsylvania', 'texas' => 'Texas', 'virginia' => 'Virginia',
+		) as $slug => $name ) {
 			$this->cats[ $slug ] = $this->term( 'category', $name, $slug );
 		}
 		$this->log( 'Payment methods & news categories ready.' );
@@ -224,7 +245,7 @@ class USG_Seeder {
 
 	private function toplists(): void {
 		// Empty containers: editors add operators in wp-admin (Operators & Offers → Toplists); pages pick them up automatically.
-		foreach ( array( 'top-casinos' => 'Top online casinos', 'top-sweeps' => 'Top sweepstakes casinos', 'top-sportsbooks' => 'Top sportsbooks', 'home-best' => 'Homepage — best overall' ) as $slug => $title ) {
+		foreach ( array( 'top-casinos' => 'Top online casinos', 'top-sweeps' => 'Top sweepstakes casinos', 'top-sportsbooks' => 'Top sportsbooks', 'home-best' => 'Homepage — best overall', 'top-poker' => 'Top online poker sites', 'top-lottery' => 'Top online lottery sites', 'top-prediction' => 'Top prediction markets', 'top-social' => 'Top social casinos' ) as $slug => $title ) {
 			$this->lists[ $slug ] = $this->upsert( 'usg_toplist', $slug, array( 'post_title' => $title ), array( 'geo' => '1', 'items' => array() ) );
 		}
 		$this->log( 'Toplists ready (empty).' );
@@ -401,14 +422,138 @@ class USG_Seeder {
 		$this->log( 'Pages ready (' . count( $this->pages ) . ').' );
 	}
 
+	/**
+	 * Section hubs mirroring PlayUSA's site structure. Article lists show "Coming soon" until content is published.
+	 */
+	private function sections(): void {
+		$L       = $this->lists;
+		$G       = $this->authors['george'];
+		$V       = $this->authors['vanessa'];
+		$landing = 'page-templates/landing.php';
+		$fcV     = array( 'fact_checker' => $V );
+		$fcG     = array( 'fact_checker' => $G );
+
+		$this->page(
+			'online-poker',
+			'Best Online Poker Sites ([month] [year]): Legal Real-Money Poker',
+			self::p( 'Real-money online poker is legal and regulated in a handful of US states, including Nevada, New Jersey, Pennsylvania, Michigan and Delaware. Below are the poker sites we recommend, with guides to where you can play, the best apps and current bonuses.' )
+			. self::b( 'toplist', array( 'toplist' => $L['top-poker'], 'title' => 'Top online poker sites for [month] [year]', 'skin' => 'rows', 'tag' => 'poker-hub' ) )
+			. self::h( 'Where is online poker legal?' )
+			. self::p( 'Each state that allows online poker licenses its own operators, and some states share player pools so you can play against opponents across state lines. Outside those states, sweepstakes poker sites are an alternative.' )
+			. self::b( 'coming-soon', array( 'title' => 'Poker site reviews & state guides' ) )
+			. self::b( 'faq', array( 'items' => "Q: Is online poker legal in the US?\nA: It is legal in a small number of states that license and regulate poker sites. You must be physically located in one of those states to play for real money.\n\nQ: Can I play against players from other states?\nA: In some cases. States that have joined shared-liquidity agreements let licensed sites pool players across state lines." ) ),
+			array( 'author' => $V, 'meta' => $fcG )
+		);
+		$this->page(
+			'online-lottery',
+			'Online Lottery USA ([year]): Where to Buy Lottery Tickets Online',
+			self::p( 'A growing number of states sell draw-game tickets and instant-win games online through the official state lottery, and approved courier services can buy tickets on your behalf in others. Find out what is available where you live.' )
+			. self::b( 'toplist', array( 'toplist' => $L['top-lottery'], 'title' => 'Top online lottery sites', 'skin' => 'rows', 'tag' => 'lottery-hub' ) )
+			. self::b( 'coming-soon', array( 'title' => 'State lottery guides, Powerball & Mega Millions' ) )
+			. self::b( 'faq', array( 'items' => "Q: Can I buy Powerball and Mega Millions tickets online?\nA: In some states, through the official state lottery website or app, or through an approved courier service. Availability depends on your state.\n\nQ: How old do I need to be to play the lottery online?\nA: Usually 18, but some states set the minimum at 19 or 21." ) ),
+			array( 'author' => $G, 'meta' => $fcV )
+		);
+		$this->page(
+			'prediction-markets',
+			'Prediction Markets ([year]): Best Sites for Sports, Politics & Events',
+			self::p( 'Prediction markets let you buy and sell contracts on the outcome of real-world events — from elections and the economy to sports. Several operate as exchanges regulated by the Commodity Futures Trading Commission (CFTC), and their legal status in individual states is still evolving.' )
+			. self::b( 'toplist', array( 'toplist' => $L['top-prediction'], 'title' => 'Top prediction markets', 'skin' => 'rows', 'tag' => 'prediction-hub' ) )
+			. self::h( 'How prediction markets work' )
+			. self::p( 'Each contract pays a fixed amount (for example $1) if an event happens and nothing if it does not. The price you pay reflects the market’s view of the probability — a contract trading at 60¢ implies roughly a 60% chance.' )
+			. self::b( 'coming-soon', array( 'title' => 'Prediction market reviews' ) ),
+			array( 'author' => $G, 'meta' => $fcV )
+		);
+
+		$this->page(
+			'casino-games',
+			'Online Casino Games: Rules, Odds & Strategy Guides',
+			self::p( 'Learn how the most popular casino games work, which bets give you the best odds, and where to play them for real money.' )
+			. self::b( 'link-grid', array( 'columns' => '4', 'links' => "Blackjack|/blackjack/|Rules, basic strategy, odds\nRoulette|/roulette/|American vs European, best bets\nCraps|/craps/|Pass line, odds bets, strategy\nVideo poker|/video-poker/|Pay tables and perfect strategy\nSlots|/slots/|RTP, volatility, free demos\nOnline poker|/online-poker/|Legal poker sites\nOnline bingo|/online-bingo/|Real-money and free bingo\nCasino bonus calculator|/tools/casino-bonus-calculator/|What a bonus is really worth" ) )
+			. self::b( 'coming-soon', array( 'title' => 'More game guides (baccarat, pai gow, three card poker…)' ) ),
+			array( 'author' => $V, 'meta' => $fcG )
+		);
+		$games = array(
+			'blackjack'   => array( 'Play Blackjack Online for Real Money ([year])', 'Blackjack is a card game where you try to beat the dealer by getting closer to 21 without going over. Played with basic strategy, it has one of the lowest house edges in the casino — often well under 1%.' ),
+			'roulette'    => array( 'Play Roulette Online for Real Money ([year])', 'Roulette is a wheel game where you bet on the number, color or group of numbers the ball will land on. European roulette has a single zero and a house edge of 2.7%; American roulette adds a double zero, which raises it to about 5.26%.' ),
+			'craps'       => array( 'Play Craps Online for Real Money ([year])', 'Craps is a dice game played on the outcome of two dice. The pass line and don’t pass bets carry some of the lowest house edges in the casino — about 1.41% and 1.36% — and free odds bets have no house edge at all.' ),
+			'video-poker' => array( 'Play Video Poker Online for Real Money ([year])', 'Video poker combines slot-machine play with five-card draw poker. Played with perfect strategy, full-pay games such as 9/6 Jacks or Better return about 99.5% over the long run.' ),
+		);
+		foreach ( $games as $slug => $g ) {
+			$name = ucwords( str_replace( '-', ' ', $slug ) );
+			$this->page(
+				$slug,
+				$g[0],
+				self::p( $g[1] )
+				. self::b( 'toplist', array( 'toplist' => $L['top-casinos'], 'title' => 'Best online casinos for ' . strtolower( $name ), 'skin' => 'rows', 'limit' => 5, 'tag' => $slug ) )
+				. self::b( 'coming-soon', array( 'title' => $name . ' rules, strategy & odds guides' ) ),
+				array( 'author' => $V, 'meta' => $fcG )
+			);
+		}
+
+		$this->page(
+			'social-casinos',
+			'Social Casinos: Free-to-Play Casino Games ([year])',
+			self::p( 'Social casinos let you play slots and table games for fun with virtual coins that have no cash value. Unlike <a href="/sweepstakes-casinos/">sweepstakes casinos</a>, there are no prizes to redeem — they are purely for entertainment, and they are available in every state.' )
+			. self::b( 'toplist', array( 'toplist' => $L['top-social'], 'title' => 'Top social casinos', 'skin' => 'rows', 'tag' => 'social-hub' ) )
+			. self::b( 'coming-soon', array( 'title' => 'Social casino reviews' ) ),
+			array( 'author' => $V, 'meta' => $fcG )
+		);
+		$this->page(
+			'online-bingo',
+			'Online Bingo in the US: Real-Money & Free Bingo Sites',
+			self::p( 'Real-money online bingo is available in a limited number of states, while free-to-play and sweepstakes bingo games are available much more widely.' )
+			. self::b( 'coming-soon', array( 'title' => 'Bingo sites & guides' ) ),
+			array( 'author' => $V, 'meta' => $fcG )
+		);
+
+		$this->page(
+			'parimutuel-betting',
+			'Horse Racing & Parimutuel Betting Online',
+			self::p( 'Parimutuel betting pools all wagers on a race and pays winners from that pool after the operator’s commission. It powers online horse racing betting (advance-deposit wagering) and historical horse racing games in many states.' )
+			. self::b( 'link-grid', array( 'columns' => '2', 'links' => "Kentucky Derby|/kentucky-derby/|Odds, contenders and how to bet\nPreakness Stakes|/preakness-stakes/|The second leg of the Triple Crown" ) )
+			. self::b( 'coming-soon', array( 'title' => 'Horse racing betting sites' ) ),
+			array( 'author' => $G, 'meta' => $fcV )
+		);
+		$this->page( 'kentucky-derby', 'Kentucky Derby Betting Guide ([year])', self::p( 'The Kentucky Derby is run on the first Saturday in May at Churchill Downs in Louisville and is the first leg of the Triple Crown. Here you will find the field, odds and where to bet legally online.' ) . self::b( 'coming-soon', array( 'title' => 'Kentucky Derby odds & contenders' ) ), array( 'author' => $G, 'meta' => $fcV ) );
+		$this->page( 'preakness-stakes', 'Preakness Stakes Betting Guide ([year])', self::p( 'The Preakness Stakes is the second leg of horse racing’s Triple Crown, run two weeks after the Kentucky Derby. Here you will find the field, odds and where to bet legally online.' ) . self::b( 'coming-soon', array( 'title' => 'Preakness odds & contenders' ) ), array( 'author' => $G, 'meta' => $fcV ) );
+
+		$this->page(
+			'how-to-bet',
+			'How to Bet on Sports: A Beginner’s Guide',
+			self::p( 'New to sports betting? Learn how odds work, the most common bet types and how to manage your bankroll — then dive into our league-by-league guides.' )
+			. self::h( 'Common bet types' )
+			. self::ul( array( '<strong>Moneyline</strong> — pick the winner of the game.', '<strong>Point spread</strong> — the favorite must win by more than the spread; the underdog must lose by less (or win).', '<strong>Totals (over/under)</strong> — bet on whether the combined score goes over or under a number.', '<strong>Parlay</strong> — combine several bets into one; all must win.' ) )
+			. self::b( 'link-grid', array( 'columns' => '3', 'links' => "Odds converter|/tools/odds-converter/|American, decimal and fractional\nImplied probability|/tools/implied-probability/|Find the vig on any market\nHedge calculator|/tools/hedge-calculator/|Lock in a profit" ) )
+			. self::b( 'coming-soon', array( 'title' => 'League guides (NFL, NBA, college basketball…)' ) ),
+			array( 'author' => $G, 'meta' => $fcV )
+		);
+
+		$this->page(
+			'taxes',
+			'Gambling Taxes in the US: How Winnings Are Taxed',
+			self::p( 'Gambling winnings are taxable income in the United States and must be reported on your federal tax return, and many states tax them too. Casinos and sportsbooks issue Form W-2G for larger wins. This page is general information, not tax advice — speak to a tax professional about your situation.' )
+			. self::b( 'coming-soon', array( 'title' => 'Federal and state gambling tax guides' ) ),
+			array( 'author' => $G, 'meta' => $fcV )
+		);
+		$this->page( 'revenue', 'US Gambling Revenue: State-by-State Results', self::p( 'States publish monthly revenue reports for their regulated casinos, sportsbooks and online gaming. We track the numbers and explain what they mean for players and the industry.' ) . self::b( 'coming-soon', array( 'title' => 'Monthly revenue reports' ) ), array( 'author' => $G, 'meta' => $fcV ) );
+		$this->page( 'tribal-casinos', 'US Tribal Casinos & Tribal Gaming', self::p( 'Tribal gaming is governed by the Indian Gaming Regulatory Act of 1988, with compacts between tribes and states setting the rules for casino-style gaming in many states. Tribal operators are also major players in sports betting and online gaming in several states.' ) . self::b( 'coming-soon', array( 'title' => 'Tribal casinos by state' ) ), array( 'author' => $G, 'meta' => $fcV ) );
+
+		$this->page( 'exclusive-offers', 'Exclusive Member Offers', self::p( 'Members-only bonuses and rewards you can claim with your Smart Rewards coins. <a href="/account/">Join free</a> to start earning.' ) . self::b( 'rewards', array( 'section' => 'catalog' ) ), array( 'template' => $landing, 'meta' => array( 'hide_byline' => '1', 'hide_author_box' => '1' ) ) );
+		$this->page( 'about/careers', 'Careers at USA Smart Gamers', self::p( 'We are always looking for knowledgeable, independent writers and editors who know the US gambling market. Tell us about yourself through our <a href="/contact-us/">contact form</a>.' ), array( 'meta' => array( 'hide_byline' => '1', 'hide_author_box' => '1', 'hide_toc' => '1' ) ) );
+		$this->page( 'about/media', 'Media & Press Inquiries', self::p( 'Journalists can contact our editorial team for comment on US gambling legislation, industry trends and responsible gambling. Please use our <a href="/contact-us/">contact form</a> and choose “Media inquiry”.' ), array( 'meta' => array( 'hide_byline' => '1', 'hide_author_box' => '1', 'hide_toc' => '1' ) ) );
+		$this->log( 'Section hubs ready.' );
+	}
 	private function short_titles(): void {
 		$short = array(
 			'online-casinos' => 'Online Casinos', 'online-casinos/new-jersey' => 'New Jersey', 'online-casinos/pennsylvania' => 'Pennsylvania', 'online-casinos/michigan' => 'Michigan', 'online-casinos/bonus' => 'Casino Bonuses',
 			'sweepstakes-casinos' => 'Sweepstakes Casinos', 'sports-betting' => 'Sports Betting', 'slots' => 'Slots', 'news' => 'News', 'learn' => 'Learn', 'tools' => 'Tools',
 			'casino-bill-tracker' => 'Bill Tracker', 'casino-finder' => 'Casino Finder', 'payments' => 'Payments', 'rewards' => 'Smart Rewards', 'our-team' => 'Our Team', 'about' => 'About',
+			'online-poker' => 'Online Poker', 'online-lottery' => 'Online Lottery', 'prediction-markets' => 'Prediction Markets', 'casino-games' => 'Casino Games', 'blackjack' => 'Blackjack', 'roulette' => 'Roulette', 'craps' => 'Craps', 'video-poker' => 'Video Poker',
+			'social-casinos' => 'Social Casinos', 'online-bingo' => 'Online Bingo', 'parimutuel-betting' => 'Horse Racing', 'kentucky-derby' => 'Kentucky Derby', 'preakness-stakes' => 'Preakness Stakes', 'how-to-bet' => 'How to Bet',
+			'taxes' => 'Gambling Taxes', 'revenue' => 'Gambling Revenue', 'tribal-casinos' => 'Tribal Casinos', 'exclusive-offers' => 'Exclusive Offers', 'about/careers' => 'Careers', 'about/media' => 'Media',
 		);
 		foreach ( $short as $path => $label ) {
-			if ( isset( $this->pages[ $path ] ) ) {
+			if ( isset( $this->pages[ $path ] ) && ( $this->touched( $this->pages[ $path ] ) || ! get_post_meta( $this->pages[ $path ], '_usg_short_title', true ) ) ) {
 				update_post_meta( $this->pages[ $path ], '_usg_short_title', $label );
 			}
 		}
@@ -418,7 +563,7 @@ class USG_Seeder {
 
 	private function menu( string $name, string $location, array $tree ): void {
 		$menu = wp_get_nav_menu_object( $name );
-		if ( $menu && $this->update ) {
+		if ( $menu && ( $this->update || $this->menus ) ) {
 			wp_delete_nav_menu( $menu->term_id );
 			$menu = false;
 		}
@@ -456,27 +601,34 @@ class USG_Seeder {
 			'Primary',
 			'primary',
 			array(
-				array( 'Online Casinos', '/online-casinos/', array(
-					array( 'Online casinos', '/online-casinos/', array( array( 'Best online casinos', '/online-casinos/' ), array( 'Casino bonuses', '/online-casinos/bonus/' ), array( 'Casino finder', '/casino-finder/' ), array( 'Payment methods', '/payments/' ) ) ),
-					array( 'By state', '/casino-bill-tracker/', array( array( 'New Jersey', '/online-casinos/new-jersey/' ), array( 'Pennsylvania', '/online-casinos/pennsylvania/' ), array( 'Michigan', '/online-casinos/michigan/' ), array( 'Bill tracker', '/casino-bill-tracker/', null, 'badge-new' ) ) ),
+				array( 'Casinos', '/online-casinos/', array(
+					array( 'Online casinos', '/online-casinos/', array( array( 'Best online casinos', '/online-casinos/' ), array( 'Casino bonuses', '/online-casinos/bonus/' ), array( 'Exclusive offers', '/exclusive-offers/', null, 'badge-new' ), array( 'Casino finder', '/casino-finder/' ), array( 'Payment methods', '/payments/' ) ) ),
+					array( 'By state', '/casino-bill-tracker/', array( array( 'New Jersey', '/online-casinos/new-jersey/' ), array( 'Pennsylvania', '/online-casinos/pennsylvania/' ), array( 'Michigan', '/online-casinos/michigan/' ), array( 'Bill tracker', '/casino-bill-tracker/' ) ) ),
+					array( 'Casino games', '/casino-games/', array( array( 'Blackjack', '/blackjack/' ), array( 'Roulette', '/roulette/' ), array( 'Craps', '/craps/' ), array( 'Video poker', '/video-poker/' ), array( 'All casino games', '/casino-games/' ) ) ),
+					array( 'Poker & bingo', '/online-poker/', array( array( 'Online poker', '/online-poker/' ), array( 'Online bingo', '/online-bingo/' ) ) ),
 				) ),
-				array( 'Sweepstakes', '/sweepstakes-casinos/' ),
+				array( 'Sweepstakes', '/sweepstakes-casinos/', array(
+					array( 'Free-to-play casinos', '/sweepstakes-casinos/', array( array( 'Sweepstakes casinos', '/sweepstakes-casinos/' ), array( 'Social casinos', '/social-casinos/' ) ) ),
+				) ),
 				array( 'Slots', '/slots/' ),
-				array( 'Sports Betting', '/sports-betting/', array(
-					array( 'Sportsbooks', '/sports-betting/', array( array( 'Best sportsbooks', '/sports-betting/' ) ) ),
+				array( 'Betting', '/sports-betting/', array(
+					array( 'Sports betting', '/sports-betting/', array( array( 'Best sportsbooks', '/sports-betting/' ), array( 'How to bet', '/how-to-bet/' ) ) ),
+					array( 'More markets', '/prediction-markets/', array( array( 'Prediction markets', '/prediction-markets/' ), array( 'Online lottery', '/online-lottery/' ) ) ),
+					array( 'Horse racing', '/parimutuel-betting/', array( array( 'Parimutuel betting', '/parimutuel-betting/' ), array( 'Kentucky Derby', '/kentucky-derby/' ), array( 'Preakness Stakes', '/preakness-stakes/' ) ) ),
 					array( 'Betting tools', '/tools/', array( array( 'Odds converter', '/tools/odds-converter/' ), array( 'Implied probability', '/tools/implied-probability/' ), array( 'Hedge calculator', '/tools/hedge-calculator/' ) ) ),
 				) ),
 				array( 'News & Guides', '/news/', array(
-					array( 'News', '/news/', array( array( 'Latest news', '/news/' ), array( 'Legislation', '/news/topic/legislation/' ), array( 'Industry', '/news/topic/industry/' ) ) ),
+					array( 'News', '/news/', array( array( 'Latest news', '/news/' ), array( 'Legislation', '/news/topic/legislation/' ), array( 'Industry', '/news/topic/industry/' ), array( 'Financial', '/news/topic/financial/' ) ) ),
 					array( 'Learn', '/learn/', array( array( 'Learn hub', '/learn/' ), array( 'Insights blog', '/insights/' ), array( 'Responsible gambling', '/responsible-gambling/' ) ) ),
+					array( 'US gambling', '/casino-bill-tracker/', array( array( 'Bill tracker', '/casino-bill-tracker/' ), array( 'Gambling taxes', '/taxes/' ), array( 'Gambling revenue', '/revenue/' ), array( 'Tribal casinos', '/tribal-casinos/' ) ) ),
 					array( 'Tools', '/tools/', array( array( 'All tools', '/tools/' ), array( 'Bonus calculator', '/tools/casino-bonus-calculator/' ), array( 'Martingale calculator', '/tools/martingale/' ) ) ),
 				) ),
 				array( 'Rewards', '/rewards/', null, 'badge-new' ),
 			)
 		);
-		$this->menu( 'State guides', 'footer_guides', array( array( 'New Jersey casinos', '/online-casinos/new-jersey/' ), array( 'Pennsylvania casinos', '/online-casinos/pennsylvania/' ), array( 'Michigan casinos', '/online-casinos/michigan/' ), array( 'Online casino bill tracker', '/casino-bill-tracker/' ), array( 'Responsible gambling', '/responsible-gambling/' ) ) );
-		$this->menu( 'Popular pages', 'footer_popular', array( array( 'Online casinos', '/online-casinos/' ), array( 'Sweepstakes casinos', '/sweepstakes-casinos/' ), array( 'Slots', '/slots/' ), array( 'Sports betting', '/sports-betting/' ), array( 'Casino finder', '/casino-finder/' ), array( 'Gambling tools', '/tools/' ) ) );
-		$this->menu( 'About us', 'footer_about', array( array( 'About us', '/about/' ), array( 'How we rate', '/about/how-we-rate/' ), array( 'Editorial guidelines', '/about/editorial-guidelines/' ), array( 'Our team', '/our-team/' ), array( 'Advertising disclosure', '/disclaimer/' ), array( 'Privacy policy', '/privacy-policy/' ), array( 'Terms of use', '/terms/' ), array( 'Contact us', '/contact-us/' ) ) );
+		$this->menu( 'State guides', 'footer_guides', array( array( 'New Jersey casinos', '/online-casinos/new-jersey/' ), array( 'Pennsylvania casinos', '/online-casinos/pennsylvania/' ), array( 'Michigan casinos', '/online-casinos/michigan/' ), array( 'Online casino bill tracker', '/casino-bill-tracker/' ), array( 'Gambling taxes', '/taxes/' ), array( 'Gambling revenue', '/revenue/' ), array( 'Tribal casinos', '/tribal-casinos/' ), array( 'Responsible gambling', '/responsible-gambling/' ) ) );
+		$this->menu( 'Popular pages', 'footer_popular', array( array( 'Online casinos', '/online-casinos/' ), array( 'Sweepstakes casinos', '/sweepstakes-casinos/' ), array( 'Slots', '/slots/' ), array( 'Sports betting', '/sports-betting/' ), array( 'Online poker', '/online-poker/' ), array( 'Prediction markets', '/prediction-markets/' ), array( 'Casino finder', '/casino-finder/' ), array( 'Gambling tools', '/tools/' ) ) );
+		$this->menu( 'About us', 'footer_about', array( array( 'About us', '/about/' ), array( 'How we rate', '/about/how-we-rate/' ), array( 'Editorial guidelines', '/about/editorial-guidelines/' ), array( 'Our team', '/our-team/' ), array( 'Careers', '/about/careers/' ), array( 'Media inquiries', '/about/media/' ), array( 'Advertising disclosure', '/disclaimer/' ), array( 'Privacy policy', '/privacy-policy/' ), array( 'Terms of use', '/terms/' ), array( 'Contact us', '/contact-us/' ) ) );
 		$this->log( 'Menus ready.' );
 	}
 
@@ -502,7 +654,7 @@ class USG_Seeder {
 WP_CLI::add_command(
 	'usg seed',
 	function ( $args, $assoc ) {
-		( new USG_Seeder( ! empty( $assoc['update'] ) ) )->run();
+		( new USG_Seeder( ! empty( $assoc['update'] ), ! empty( $assoc['menus'] ) ) )->run();
 	},
-	array( 'shortdesc' => 'Seed USA Smart Gamers site structure (pages, menus, states, toplists). Use --update to overwrite existing seeded items.' )
+	array( 'shortdesc' => 'Seed USA Smart Gamers site structure (pages, menus, states, toplists). Safe to re-run: only creates missing items. --menus rebuilds the menus; --update overwrites ALL seeded pages/menus/settings.' )
 );

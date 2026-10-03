@@ -270,6 +270,10 @@ function usg_block_state_table( array $a ): string {
 	return '<section class="usg-state-table">' . ( ! empty( $a['title'] ) ? '<h2 class="usg-block-title">' . esc_html( usg_tokens( $a['title'] ) ) . '</h2>' : '' ) . '<div class="usg-table-wrap"><table class="usg-table"><thead><tr><th>' . esc_html__( 'State', 'usasmartgamers-core' ) . '</th><th>' . esc_html__( 'Status', 'usasmartgamers-core' ) . '</th><th>' . esc_html__( 'Regulator', 'usasmartgamers-core' ) . '</th><th>' . esc_html__( 'Age', 'usasmartgamers-core' ) . '</th></tr></thead><tbody>' . $rows . '</tbody></table></div></section>';
 }
 
+function usg_block_coming_soon( array $a ): string {
+	return usg_coming_soon( (string) ( $a['title'] ?? '' ) );
+}
+
 function usg_block_link_grid( array $a ): string {
 	$links = usg_pipe_lines( $a['links'] ?? '' );
 	if ( ! $links ) {

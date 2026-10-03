@@ -136,6 +136,9 @@ function usg_block_defs(): array {
 			'section' => array( 'type' => 'select', 'label' => 'Show', 'options' => array( 'both' => 'Tasks + catalogue', 'tasks' => 'Ways to earn', 'catalog' => 'Reward catalogue' ), 'default' => 'both' ),
 		) ),
 		'contact_form'   => array( 'Contact form', 'email', array() ),
+		'coming_soon'    => array( 'Coming soon', 'clock', array(
+			'title' => array( 'type' => 'text', 'label' => 'Heading (optional)' ),
+		) ),
 	);
 }
 
