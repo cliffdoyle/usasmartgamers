@@ -33,10 +33,19 @@ The pipeline ships **code only**. Content lives in the database (edited in wp-ad
 as idempotent plugin upgrade routines; one-off tasks use WP-CLI on the server (pattern in [skill.md](../skill.md) §4.7).
 
 ### Seeder
-`wp usg seed` builds the site structure (US states + legal status, payment methods, providers, operators, offers,
-toplists, slots, ~37 pages, news, Insights, rewards, menus, settings). It is idempotent; `wp usg seed --update`
-overwrites seeded items (pages, menus, operators…) — **don't run `--update` once editors have changed content.**
-Operators, offers, slots, providers, news and state legal statuses are **SAMPLE data** — replace before launch.
+`wp usg seed` builds the site **structure** only: US states + legal status, payment methods, news categories,
+four empty toplists (Top online casinos, Top sweepstakes casinos, Top sportsbooks, Homepage — best overall), ~31 pages,
+menus and settings. No operators, offers, slots, news or rewards are created — every section without data shows
+**"Coming soon"** until editors add content in wp-admin. It is idempotent; `wp usg seed --update` overwrites seeded
+pages/menus/toplists — **don't run `--update` once editors have changed content.**
+
+### Adding real content (what makes "Coming soon" disappear)
+1. **Operators & Offers → Operators**: add each casino/sportsbook (logo, score, availability by state, facts, pros/cons).
+2. **Operators & Offers → Offers**: add its welcome offer (headline, promo code, T&Cs, affiliate URL).
+3. **Operators & Offers → Toplists**: add operators to the four toplists — hubs, state pages and the homepage fill automatically.
+4. Write a review page (e.g. `/online-casinos/brand-name/`) with the Review summary, Pros & cons, Claim button and User reviews blocks, and set it as the operator's *Review page*.
+5. **Slots** (+ Providers), **Posts** (news), **Insights**, **Smart Rewards → Reward catalogue** as needed.
+6. Verify each state's legal status under **Operators & Offers → US States**.
 
 ### Team
 | User | Role | Writes | Fact-checks |

@@ -251,7 +251,7 @@ class USG_Seeder {
 			. self::b( 'news-feed', array( 'title' => 'Latest news & guides', 'count' => 4, 'layout' => 'grid' ) )
 			. self::b( 'team-grid', array( 'title' => 'Meet our experts' ) )
 			. self::b( 'faq', array( 'items' => "Q: Is online gambling legal in the US?\nA: It depends on your state and the type of game. Real-money online casinos are legal in a handful of states, sports betting in most, and sweepstakes casinos are available in the majority of states.\n\nQ: How does USA Smart Gamers make money?\nA: We may earn a commission when you sign up through our links. This never changes our scores or rankings.\n\nQ: Are the sites you list safe?\nA: We only recommend operators that are licensed or legally operating where they accept players, and we test each one hands-on." ) );
-		$this->page( 'home', 'USA Smart Gamers — Legal US online gambling guides', $home, array( 'template' => 'default', 'meta' => array( 'hide_byline' => '1', 'hide_author_box' => '1' ) ) );
+		$this->page( 'home', 'Legal US Online Gambling Guides, Reviews & Bonuses', $home, array( 'template' => 'default', 'meta' => array( 'hide_byline' => '1', 'hide_author_box' => '1' ) ) );
 
 		// Online casinos hub.
 		$this->page(
