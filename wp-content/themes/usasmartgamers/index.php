@@ -1,32 +1,22 @@
 <?php
 /**
- * Fallback template for all views.
+ * Fallback template.
  */
 
 get_header();
 ?>
-<div class="container content">
+<div class="container archive-content">
+	<?php usg_breadcrumbs(); ?>
 	<?php if ( have_posts() ) : ?>
-		<?php if ( ! is_singular() ) : ?>
-			<h1 class="page-title"><?php echo wp_kses_post( get_the_archive_title() ?: get_bloginfo( 'name' ) ); ?></h1>
-		<?php endif; ?>
-		<?php
-		while ( have_posts() ) :
-			the_post();
+		<div class="usg-cards usg-cards--grid">
+			<?php
+			while ( have_posts() ) :
+				the_post();
+				echo function_exists( 'usg_post_card' ) ? usg_post_card( get_post() ) : '<h2><a href="' . esc_url( get_permalink() ) . '">' . esc_html( get_the_title() ) . '</a></h2>'; // phpcs:ignore
+			endwhile;
 			?>
-			<article <?php post_class(); ?>>
-				<?php if ( is_singular() ) : ?>
-					<h1 class="entry-title"><?php the_title(); ?></h1>
-					<div class="entry-content"><?php the_content(); ?></div>
-				<?php else : ?>
-					<h2 class="entry-title"><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h2>
-					<div class="entry-summary"><?php the_excerpt(); ?></div>
-				<?php endif; ?>
-			</article>
-		<?php endwhile; ?>
-		<?php the_posts_pagination(); ?>
-	<?php else : ?>
-		<h1 class="page-title"><?php esc_html_e( 'Nothing found', 'usasmartgamers' ); ?></h1>
+		</div>
+		<?php usg_pagination(); ?>
 	<?php endif; ?>
 </div>
 <?php
