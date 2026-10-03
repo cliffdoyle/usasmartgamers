@@ -1,11 +1,14 @@
 <?php
 /**
- * USA Smart Gamers theme bootstrap.
+ * USA Smart Gamers theme bootstrap. Presentation only — data/blocks come from the usasmartgamers-core plugin.
  */
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'USG_THEME_VERSION', '0.1.0' );
+define( 'USG_THEME_VERSION', '1.0.0' );
+
+require_once get_template_directory() . '/inc/walker-mega.php';
+require_once get_template_directory() . '/inc/template-tags.php';
 
 /**
  * Build identifier written by CI (build-version.txt = git SHA). Used for cache busting and smoke tests.
@@ -25,15 +28,17 @@ add_action(
 		add_theme_support( 'title-tag' );
 		add_theme_support( 'post-thumbnails' );
 		add_theme_support( 'responsive-embeds' );
+		add_theme_support( 'align-wide' );
 		add_theme_support( 'editor-styles' );
-		add_theme_support( 'html5', array( 'search-form', 'gallery', 'caption', 'style', 'script' ) );
-		add_theme_support( 'custom-logo', array( 'height' => 60, 'width' => 220, 'flex-width' => true ) );
+		add_theme_support( 'html5', array( 'search-form', 'gallery', 'caption', 'style', 'script', 'navigation-widgets' ) );
+		add_theme_support( 'custom-logo', array( 'height' => 60, 'width' => 240, 'flex-width' => true, 'flex-height' => true ) );
+		add_editor_style( 'assets/css/main.css' );
 
 		register_nav_menus(
 			array(
 				'primary'        => __( 'Primary (mega-nav)', 'usasmartgamers' ),
-				'footer_guides'  => __( 'Footer: State Guides', 'usasmartgamers' ),
-				'footer_popular' => __( 'Footer: Popular Pages', 'usasmartgamers' ),
+				'footer_guides'  => __( 'Footer: State guides', 'usasmartgamers' ),
+				'footer_popular' => __( 'Footer: Popular pages', 'usasmartgamers' ),
 				'footer_about'   => __( 'Footer: About', 'usasmartgamers' ),
 			)
 		);
@@ -43,8 +48,11 @@ add_action(
 add_action(
 	'wp_enqueue_scripts',
 	function () {
-		wp_enqueue_style( 'usg-fonts', 'https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap', array(), null );
-		wp_enqueue_style( 'usg-main', get_template_directory_uri() . '/assets/css/main.css', array( 'usg-fonts' ), USG_THEME_VERSION . '-' . usg_build_id() );
+		$ver = USG_THEME_VERSION . '-' . usg_build_id();
+		wp_enqueue_style( 'usg-fonts', 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap', array(), null );
+		wp_enqueue_style( 'usg-main', get_template_directory_uri() . '/assets/css/main.css', array( 'usg-fonts' ), $ver );
+		wp_enqueue_script( 'usg-theme', get_template_directory_uri() . '/assets/js/theme.js', array(), $ver, array( 'in_footer' => true, 'strategy' => 'defer' ) );
+		wp_dequeue_style( 'classic-theme-styles' );
 	}
 );
 
@@ -52,6 +60,20 @@ add_action(
 	'wp_head',
 	function () {
 		echo '<meta name="usg-build" content="' . esc_attr( usg_build_id() ) . '">' . "\n";
+		echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' . "\n";
 	},
 	1
 );
+
+add_filter(
+	'body_class',
+	function ( $classes ) {
+		if ( is_page_template( 'page-templates/landing.php' ) || is_front_page() ) {
+			$classes[] = 'usg-wide';
+		}
+		return $classes;
+	}
+);
+
+add_filter( 'excerpt_length', fn() => 28 );
+add_filter( 'excerpt_more', fn() => '…' );
